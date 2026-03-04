@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useChurch } from '@/contexts/ChurchContext';
+import { useChurch, ALL_CHURCHES } from '@/contexts/ChurchContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 import { formatCentsToBRL, parseBRLToCents } from '@/lib/formatters';
@@ -30,19 +30,20 @@ const Transacoes = () => {
   const [formAmount, setFormAmount] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [formCategoryId, setFormCategoryId] = useState('');
+  const [formChurchId, setFormChurchId] = useState('');
   const [formFile, setFormFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!selectedChurchId) return;
+    if (activeChurchIds.length === 0) return;
     fetchAll();
-  }, [selectedChurchId]);
+  }, [selectedChurchId, activeChurchIds.length]);
 
   const fetchAll = async () => {
     setLoading(true);
     const [{ data: txns }, { data: cats }] = await Promise.all([
-      supabase.from('transactions').select('*, categories(*)').eq('church_id', selectedChurchId).order('date', { ascending: false }).limit(200),
-      supabase.from('categories').select('*').eq('church_id', selectedChurchId).order('name'),
+      supabase.from('transactions').select('*, categories(*)').in('church_id', activeChurchIds).order('date', { ascending: false }).limit(200),
+      supabase.from('categories').select('*').in('church_id', activeChurchIds).order('name'),
     ]);
     setTransactions(txns || []);
     setCategories(cats || []);
@@ -56,6 +57,7 @@ const Transacoes = () => {
     setFormAmount('');
     setFormDescription('');
     setFormCategoryId('');
+    setFormChurchId(selectedChurchId === ALL_CHURCHES ? '' : selectedChurchId || '');
     setFormFile(null);
     setDialogOpen(true);
   };
@@ -67,6 +69,7 @@ const Transacoes = () => {
     setFormAmount((t.amount_cents / 100).toFixed(2).replace('.', ','));
     setFormDescription(t.description);
     setFormCategoryId(t.category_id || '');
+    setFormChurchId(t.church_id);
     setFormFile(null);
     setDialogOpen(true);
   };
@@ -81,9 +84,9 @@ const Transacoes = () => {
     let receipt_url = editing?.receipt_url ?? null;
 
     // Upload receipt if provided
-    if (formFile && selectedChurchId) {
+    if (formFile && formChurchId) {
       const ext = formFile.name.split('.').pop();
-      const path = `${selectedChurchId}/${Date.now()}.${ext}`;
+      const path = `${formChurchId}/${Date.now()}.${ext}`;
       const { error } = await supabase.storage.from('receipts').upload(path, formFile);
       if (!error) {
         const { data: urlData } = supabase.storage.from('receipts').getPublicUrl(path);
@@ -93,7 +96,7 @@ const Transacoes = () => {
 
     const amount_cents = parseBRLToCents(formAmount);
     const payload = {
-      church_id: selectedChurchId,
+      church_id: formChurchId,
       type: formType,
       date: formDate,
       amount_cents,
