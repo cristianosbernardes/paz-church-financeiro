@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Calendar, Church, UserCheck, Users } from 'lucide-react';
+import { ArrowLeft, Calendar, Church, UserCheck, Users, Pencil } from 'lucide-react';
 
 const MembroDetalhe = () => {
   const { id } = useParams<{ id: string }>();
@@ -62,10 +62,13 @@ const MembroDetalhe = () => {
         <Button variant="ghost" size="icon" onClick={() => navigate('/membros')}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-2xl font-bold">{member.full_name}</h1>
           <p className="text-sm text-muted-foreground">{member.churches?.name}</p>
         </div>
+        <Button variant="outline" size="sm" onClick={() => navigate(`/membros?edit=${member.id}`)}>
+          <Pencil className="h-4 w-4 mr-1" /> Editar
+        </Button>
       </div>
 
       {/* Info Cards */}
