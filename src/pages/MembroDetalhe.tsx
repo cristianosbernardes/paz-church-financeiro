@@ -3,11 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useChurch } from '@/contexts/ChurchContext';
 import { supabase } from '@/lib/supabaseClient';
 import { formatCentsToBRL } from '@/lib/formatters';
+import { downloadFileAsPng } from '@/lib/fileUtils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Calendar, Church, UserCheck, Users, Pencil } from 'lucide-react';
+import { ArrowLeft, Calendar, Church, UserCheck, Users, Pencil, Download, FileText } from 'lucide-react';
+import { toast } from 'sonner';
 
 const MembroDetalhe = () => {
   const { id } = useParams<{ id: string }>();
@@ -24,7 +26,7 @@ const MembroDetalhe = () => {
       setLoading(true);
       const [memberRes, txRes, relRes] = await Promise.all([
         supabase.from('members').select('*, churches(name)').eq('id', id).single(),
-        supabase.from('transactions').select('*, categories(name)').eq('member_id', id).order('date', { ascending: false }),
+        supabase.from('transactions').select('*, categories(name)').eq('member_id', id).order('date', { ascending: false }).limit(200),
         supabase.from('member_relatives').select('*, relative:relative_member_id(full_name)').eq('member_id', id),
       ]);
       setMember(memberRes.data);
@@ -54,6 +56,16 @@ const MembroDetalhe = () => {
 
   const totalIncome = transactions.filter(t => t.type === 'INCOME').reduce((s, t) => s + t.amount_cents, 0);
   const totalExpense = transactions.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + t.amount_cents, 0);
+
+  const handleDownload = async (url: string, description: string) => {
+    try {
+      const fileName = url.split('/').pop() || description;
+      await downloadFileAsPng(url, fileName);
+      toast.success('Download iniciado');
+    } catch {
+      toast.error('Erro ao baixar arquivo');
+    }
+  };
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -150,7 +162,7 @@ const MembroDetalhe = () => {
           <CardTitle className="text-sm sm:text-base">Histórico de Transações ({transactions.length})</CardTitle>
         </CardHeader>
         <CardContent className="p-0 overflow-x-auto">
-          <Table className="min-w-[500px]">
+           <Table className="min-w-[600px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Data</TableHead>
@@ -158,12 +170,13 @@ const MembroDetalhe = () => {
                 <TableHead>Valor</TableHead>
                 <TableHead>Categoria</TableHead>
                 <TableHead>Descrição</TableHead>
+                <TableHead>Comprov.</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {transactions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                     Nenhuma transação vinculada a este membro.
                   </TableCell>
                 </TableRow>
@@ -183,6 +196,21 @@ const MembroDetalhe = () => {
                     </TableCell>
                     <TableCell className="text-sm">{t.categories?.name || '—'}</TableCell>
                     <TableCell className="max-w-[250px] truncate">{t.description}</TableCell>
+                    <TableCell>
+                      {t.receipt_url ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 gap-1 text-xs text-primary"
+                          onClick={() => handleDownload(t.receipt_url!, t.description)}
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                          Baixar
+                        </Button>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">—</span>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))
               )}
