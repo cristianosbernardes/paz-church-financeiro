@@ -20,6 +20,7 @@ const Transacoes = () => {
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [membersList, setMembersList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
@@ -31,6 +32,7 @@ const Transacoes = () => {
   const [formDescription, setFormDescription] = useState('');
   const [formCategoryId, setFormCategoryId] = useState('');
   const [formChurchId, setFormChurchId] = useState('');
+  const [formMemberId, setFormMemberId] = useState('');
   const [formFile, setFormFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -41,12 +43,14 @@ const Transacoes = () => {
 
   const fetchAll = async () => {
     setLoading(true);
-    const [{ data: txns }, { data: cats }] = await Promise.all([
-      supabase.from('transactions').select('*, categories(*)').in('church_id', activeChurchIds).order('date', { ascending: false }).limit(200),
+    const [{ data: txns }, { data: cats }, { data: mbrs }] = await Promise.all([
+      supabase.from('transactions').select('*, categories(*), members(full_name)').in('church_id', activeChurchIds).order('date', { ascending: false }).limit(200),
       supabase.from('categories').select('*').in('church_id', activeChurchIds).order('name'),
+      supabase.from('members').select('id, full_name, church_id').in('church_id', activeChurchIds).order('full_name'),
     ]);
     setTransactions(txns || []);
     setCategories(cats || []);
+    setMembersList(mbrs || []);
     setLoading(false);
   };
 
@@ -58,7 +62,7 @@ const Transacoes = () => {
     setFormDescription('');
     setFormCategoryId('');
     setFormChurchId(selectedChurchId === ALL_CHURCHES ? '' : selectedChurchId || '');
-    setFormFile(null);
+    setFormMemberId('');
     setDialogOpen(true);
   };
 
@@ -70,7 +74,7 @@ const Transacoes = () => {
     setFormDescription(t.description);
     setFormCategoryId(t.category_id || '');
     setFormChurchId(t.church_id);
-    setFormFile(null);
+    setFormMemberId((t as any).member_id || '');
     setDialogOpen(true);
   };
 
@@ -102,6 +106,7 @@ const Transacoes = () => {
       amount_cents,
       description: formDescription,
       category_id: formCategoryId || null,
+      member_id: formMemberId || null,
       receipt_url,
       created_by: user!.id,
     };
