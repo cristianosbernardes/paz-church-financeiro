@@ -4,7 +4,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Church, Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
+import logoPaz from '@/assets/logo-paz.png';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -32,8 +33,8 @@ const Login = () => {
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center space-y-3">
-          <div className="mx-auto bg-primary/10 p-4 rounded-2xl w-fit">
-            <Church className="h-10 w-10 text-primary" />
+          <div className="mx-auto w-fit">
+            <img src={logoPaz} alt="Paz Church" className="h-20 w-20 object-contain" />
           </div>
           <CardTitle className="text-2xl">Igreja Finance</CardTitle>
           <p className="text-muted-foreground text-sm">Gestão financeira para igrejas</p>
