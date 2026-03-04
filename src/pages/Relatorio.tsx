@@ -196,7 +196,7 @@ const Relatorio = () => {
           {/* Header */}
           <div className="bg-primary text-primary-foreground rounded-lg p-6 text-center">
             <h2 className="text-xl font-bold">RELATÓRIO DETALHADO - {monthLabel.toUpperCase()}</h2>
-            <p className="text-sm opacity-80 mt-1">{selectedChurchName}</p>
+            <p className="text-sm opacity-80 mt-1">{localChurchName}</p>
           </div>
 
           {/* Summary cards */}
