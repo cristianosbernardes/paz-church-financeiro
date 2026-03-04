@@ -162,6 +162,7 @@ const Transacoes = () => {
         <Card className="shadow-sm overflow-hidden">
           <CardContent className="p-0">
             <div className="overflow-x-auto">
+            <Table className="min-w-[700px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Data</TableHead>
