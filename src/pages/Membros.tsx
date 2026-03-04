@@ -15,6 +15,7 @@ import type { Church } from '@/types/database';
 
 const Membros = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { memberships, userRole } = useChurch();
   const [members, setMembers] = useState<any[]>([]);
   const [churches, setChurches] = useState<Church[]>([]);
@@ -49,6 +50,18 @@ const Membros = () => {
   };
 
   useEffect(() => { if (userChurchIds.length) fetchData(); }, [memberships]);
+
+  // Handle ?edit= query param from detail page
+  useEffect(() => {
+    const editId = searchParams.get('edit');
+    if (editId && members.length > 0) {
+      const m = members.find(m => m.id === editId);
+      if (m) {
+        openEdit(m);
+        setSearchParams({}, { replace: true });
+      }
+    }
+  }, [searchParams, members]);
 
   const openNew = () => {
     setEditing(null);
