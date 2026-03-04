@@ -26,7 +26,7 @@ const MembroDetalhe = () => {
       setLoading(true);
       const [memberRes, txRes, relRes] = await Promise.all([
         supabase.from('members').select('*, churches(name)').eq('id', id).single(),
-        supabase.from('transactions').select('*, categories(name)').eq('member_id', id).order('date', { ascending: false }),
+        supabase.from('transactions').select('*, categories(name)').eq('member_id', id).order('date', { ascending: false }).limit(200),
         supabase.from('member_relatives').select('*, relative:relative_member_id(full_name)').eq('member_id', id),
       ]);
       setMember(memberRes.data);
