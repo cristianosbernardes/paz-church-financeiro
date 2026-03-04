@@ -162,7 +162,7 @@ const MembroDetalhe = () => {
           <CardTitle className="text-sm sm:text-base">Histórico de Transações ({transactions.length})</CardTitle>
         </CardHeader>
         <CardContent className="p-0 overflow-x-auto">
-          <Table className="min-w-[500px]">
+           <Table className="min-w-[600px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Data</TableHead>
@@ -170,12 +170,13 @@ const MembroDetalhe = () => {
                 <TableHead>Valor</TableHead>
                 <TableHead>Categoria</TableHead>
                 <TableHead>Descrição</TableHead>
+                <TableHead>Comprov.</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {transactions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                     Nenhuma transação vinculada a este membro.
                   </TableCell>
                 </TableRow>
@@ -195,6 +196,21 @@ const MembroDetalhe = () => {
                     </TableCell>
                     <TableCell className="text-sm">{t.categories?.name || '—'}</TableCell>
                     <TableCell className="max-w-[250px] truncate">{t.description}</TableCell>
+                    <TableCell>
+                      {t.receipt_url ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 gap-1 text-xs text-primary"
+                          onClick={() => handleDownload(t.receipt_url!, t.description)}
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                          Baixar
+                        </Button>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">—</span>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))
               )}
