@@ -147,10 +147,10 @@ const MembroDetalhe = () => {
       {/* Transactions */}
       <Card className="shadow-sm">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Histórico de Transações ({transactions.length})</CardTitle>
+          <CardTitle className="text-sm sm:text-base">Histórico de Transações ({transactions.length})</CardTitle>
         </CardHeader>
-        <CardContent className="p-0">
-          <Table>
+        <CardContent className="p-0 overflow-x-auto">
+          <Table className="min-w-[500px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Data</TableHead>
