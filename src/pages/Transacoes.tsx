@@ -128,7 +128,10 @@ const Transacoes = () => {
     else { toast.success('Excluída'); fetchAll(); }
   };
 
-  const filteredCategories = categories.filter(c => c.type === formType || c.type === 'BOTH');
+  const filteredCategories = categories.filter(c => 
+    (c.type === formType || c.type === 'BOTH') && 
+    (!formChurchId || c.church_id === formChurchId)
+  );
 
   return (
     <div className="space-y-6">
