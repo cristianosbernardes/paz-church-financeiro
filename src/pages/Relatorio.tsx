@@ -12,10 +12,18 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 const Relatorio = () => {
-  const { selectedChurchId, selectedChurchName } = useChurch();
+  const { selectedChurchId, selectedChurchName, memberships } = useChurch();
   const [searchParams, setSearchParams] = useSearchParams();
   const month = searchParams.get('month') || getCurrentYearMonth();
   const [year, monthNum] = month.split('-').map(Number);
+
+  // Local church filter (defaults to sidebar selection)
+  const [localChurchId, setLocalChurchId] = useState(selectedChurchId || '');
+  const localChurchName = memberships.find(m => m.church_id === localChurchId)?.churches?.name || selectedChurchName;
+
+  useEffect(() => {
+    if (selectedChurchId && !localChurchId) setLocalChurchId(selectedChurchId);
+  }, [selectedChurchId]);
 
   const [summary, setSummary] = useState<MonthlySummary>({ previousBalance: 0, totalIncome: 0, totalExpense: 0, currentBalance: 0 });
   const [incomes, setIncomes] = useState<Transaction[]>([]);
@@ -23,9 +31,9 @@ const Relatorio = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!selectedChurchId) return;
+    if (!localChurchId) return;
     fetchData();
-  }, [selectedChurchId, month]);
+  }, [localChurchId, month]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -35,7 +43,7 @@ const Relatorio = () => {
     const { data: txns } = await supabase
       .from('transactions')
       .select('*, categories(*)')
-      .eq('church_id', selectedChurchId)
+      .eq('church_id', localChurchId)
       .gte('date', startDate)
       .lte('date', endDate)
       .order('date');
@@ -50,7 +58,7 @@ const Relatorio = () => {
     const { data: prevTxns } = await supabase
       .from('transactions')
       .select('type, amount_cents')
-      .eq('church_id', selectedChurchId)
+      .eq('church_id', localChurchId)
       .lt('date', startDate);
 
     const previousBalance = (prevTxns || []).reduce((s, t) => s + (t.type === 'INCOME' ? t.amount_cents : -t.amount_cents), 0);
@@ -147,7 +155,19 @@ const Relatorio = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-bold">Relatório Mensal</h1>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <Select value={localChurchId} onValueChange={setLocalChurchId}>
+            <SelectTrigger className="w-52">
+              <SelectValue placeholder="Selecionar igreja" />
+            </SelectTrigger>
+            <SelectContent>
+              {memberships.map(m => (
+                <SelectItem key={m.church_id} value={m.church_id}>
+                  {m.churches?.name ?? m.church_id}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Select value={month} onValueChange={(v) => setSearchParams({ month: v })}>
             <SelectTrigger className="w-48">
               <SelectValue />
