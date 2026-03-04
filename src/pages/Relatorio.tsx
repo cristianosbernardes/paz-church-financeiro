@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useChurch } from '@/contexts/ChurchContext';
+import { useChurch, ALL_CHURCHES } from '@/contexts/ChurchContext';
 import { supabase } from '@/lib/supabaseClient';
 import { formatCentsToBRL, getCurrentYearMonth, MONTH_NAMES, getMonthLabel } from '@/lib/formatters';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -11,28 +11,12 @@ import type { Transaction, MonthlySummary } from '@/types/database';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-const ALL_CHURCHES = '__ALL__';
-
 const Relatorio = () => {
-  const { selectedChurchId, selectedChurchName, memberships } = useChurch();
+  const { selectedChurchId, selectedChurchName, activeChurchIds, memberships, setSelectedChurchId } = useChurch();
   const [searchParams, setSearchParams] = useSearchParams();
   const month = searchParams.get('month') || getCurrentYearMonth();
   const [year, monthNum] = month.split('-').map(Number);
 
-  // Local church filter (defaults to sidebar selection, supports "all")
-  const [localChurchId, setLocalChurchId] = useState(selectedChurchId || ALL_CHURCHES);
-
-  const allChurchIds = memberships.map(m => m.church_id);
-  const activeChurchIds = localChurchId === ALL_CHURCHES ? allChurchIds : [localChurchId];
-  const localChurchName = localChurchId === ALL_CHURCHES
-    ? 'Todas as Igrejas'
-    : memberships.find(m => m.church_id === localChurchId)?.churches?.name || selectedChurchName;
-
-  useEffect(() => {
-    if (selectedChurchId && localChurchId !== ALL_CHURCHES && !localChurchId) {
-      setLocalChurchId(selectedChurchId);
-    }
-  }, [selectedChurchId]);
 
   const [summary, setSummary] = useState<MonthlySummary>({ previousBalance: 0, totalIncome: 0, totalExpense: 0, currentBalance: 0 });
   const [incomes, setIncomes] = useState<Transaction[]>([]);
