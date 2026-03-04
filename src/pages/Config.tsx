@@ -33,9 +33,11 @@ const Config = () => {
         <TabsList>
           <TabsTrigger value="categories">Categorias</TabsTrigger>
           <TabsTrigger value="churches">Igrejas</TabsTrigger>
+          <TabsTrigger value="roles">Cargos</TabsTrigger>
         </TabsList>
         <TabsContent value="categories"><CategoriesTab /></TabsContent>
         <TabsContent value="churches"><ChurchesTab /></TabsContent>
+        <TabsContent value="roles"><RolesTab /></TabsContent>
       </Tabs>
     </div>
   );
