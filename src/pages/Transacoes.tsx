@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 import type { Transaction, Category, TransactionType } from '@/types/database';
 
 const Transacoes = () => {
-  const { selectedChurchId, userRole } = useChurch();
+  const { selectedChurchId, activeChurchIds, userRole, memberships } = useChurch();
   const { user } = useAuth();
   const canEdit = userRole === 'ADMIN' || userRole === 'TESOURARIA';
 
