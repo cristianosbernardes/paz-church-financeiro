@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Card, CardContent } from '@/components/ui/card';
 import { Plus, Pencil, Trash2, Upload, TrendingUp, TrendingDown } from 'lucide-react';
 import { toast } from 'sonner';
+import { processFileForUpload, getBucketForType, buildStoragePath } from '@/lib/fileUtils';
 import type { Transaction, Category, TransactionType } from '@/types/database';
 
 const Transacoes = () => {
