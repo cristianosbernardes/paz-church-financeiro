@@ -113,10 +113,10 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold">Dashboard</h1>
         <Select value={month} onValueChange={(v) => setSearchParams({ month: v })}>
-          <SelectTrigger className="w-48">
+          <SelectTrigger className="w-full sm:w-48">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -141,7 +141,7 @@ const Dashboard = () => {
                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{c.label}</span>
                     <c.icon className={`h-5 w-5 ${c.color}`} />
                   </div>
-                  <p className={`text-2xl font-bold ${c.color}`}>{formatCentsToBRL(c.value)}</p>
+                  <p className={`text-xl sm:text-2xl font-bold ${c.color}`}>{formatCentsToBRL(c.value)}</p>
                 </CardContent>
               </Card>
             ))}
