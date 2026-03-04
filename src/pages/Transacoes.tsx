@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useChurch } from '@/contexts/ChurchContext';
+import { useChurch, ALL_CHURCHES } from '@/contexts/ChurchContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 import { formatCentsToBRL, parseBRLToCents } from '@/lib/formatters';
@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 import type { Transaction, Category, TransactionType } from '@/types/database';
 
 const Transacoes = () => {
-  const { selectedChurchId, userRole } = useChurch();
+  const { selectedChurchId, activeChurchIds, userRole, memberships } = useChurch();
   const { user } = useAuth();
   const canEdit = userRole === 'ADMIN' || userRole === 'TESOURARIA';
 
@@ -30,19 +30,20 @@ const Transacoes = () => {
   const [formAmount, setFormAmount] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [formCategoryId, setFormCategoryId] = useState('');
+  const [formChurchId, setFormChurchId] = useState('');
   const [formFile, setFormFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!selectedChurchId) return;
+    if (activeChurchIds.length === 0) return;
     fetchAll();
-  }, [selectedChurchId]);
+  }, [selectedChurchId, activeChurchIds.length]);
 
   const fetchAll = async () => {
     setLoading(true);
     const [{ data: txns }, { data: cats }] = await Promise.all([
-      supabase.from('transactions').select('*, categories(*)').eq('church_id', selectedChurchId).order('date', { ascending: false }).limit(200),
-      supabase.from('categories').select('*').eq('church_id', selectedChurchId).order('name'),
+      supabase.from('transactions').select('*, categories(*)').in('church_id', activeChurchIds).order('date', { ascending: false }).limit(200),
+      supabase.from('categories').select('*').in('church_id', activeChurchIds).order('name'),
     ]);
     setTransactions(txns || []);
     setCategories(cats || []);
@@ -56,6 +57,7 @@ const Transacoes = () => {
     setFormAmount('');
     setFormDescription('');
     setFormCategoryId('');
+    setFormChurchId(selectedChurchId === ALL_CHURCHES ? '' : selectedChurchId || '');
     setFormFile(null);
     setDialogOpen(true);
   };
@@ -67,6 +69,7 @@ const Transacoes = () => {
     setFormAmount((t.amount_cents / 100).toFixed(2).replace('.', ','));
     setFormDescription(t.description);
     setFormCategoryId(t.category_id || '');
+    setFormChurchId(t.church_id);
     setFormFile(null);
     setDialogOpen(true);
   };
@@ -81,9 +84,9 @@ const Transacoes = () => {
     let receipt_url = editing?.receipt_url ?? null;
 
     // Upload receipt if provided
-    if (formFile && selectedChurchId) {
+    if (formFile && formChurchId) {
       const ext = formFile.name.split('.').pop();
-      const path = `${selectedChurchId}/${Date.now()}.${ext}`;
+      const path = `${formChurchId}/${Date.now()}.${ext}`;
       const { error } = await supabase.storage.from('receipts').upload(path, formFile);
       if (!error) {
         const { data: urlData } = supabase.storage.from('receipts').getPublicUrl(path);
@@ -93,7 +96,7 @@ const Transacoes = () => {
 
     const amount_cents = parseBRLToCents(formAmount);
     const payload = {
-      church_id: selectedChurchId,
+      church_id: formChurchId,
       type: formType,
       date: formDate,
       amount_cents,
@@ -125,7 +128,10 @@ const Transacoes = () => {
     else { toast.success('Excluída'); fetchAll(); }
   };
 
-  const filteredCategories = categories.filter(c => c.type === formType || c.type === 'BOTH');
+  const filteredCategories = categories.filter(c => 
+    (c.type === formType || c.type === 'BOTH') && 
+    (!formChurchId || c.church_id === formChurchId)
+  );
 
   return (
     <div className="space-y-6">
@@ -212,6 +218,21 @@ const Transacoes = () => {
             <DialogTitle>{editing ? 'Editar' : 'Nova'} {formType === 'INCOME' ? 'Entrada' : 'Saída'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Igreja</label>
+              <Select value={formChurchId} onValueChange={setFormChurchId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecionar igreja" />
+                </SelectTrigger>
+                <SelectContent>
+                  {memberships.map(m => (
+                    <SelectItem key={m.church_id} value={m.church_id}>
+                      {m.churches?.name ?? m.church_id}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-1">
               <label className="text-sm font-medium">Data</label>
               <Input type="date" value={formDate} onChange={e => setFormDate(e.target.value)} />
