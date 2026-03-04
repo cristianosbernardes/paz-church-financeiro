@@ -282,7 +282,7 @@ const Transacoes = () => {
                   <SelectValue placeholder="Vincular a um membro" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Nenhum</SelectItem>
+                  <SelectItem value="none">Nenhum</SelectItem>
                   {membersList.filter(m => !formChurchId || m.church_id === formChurchId).map(m => (
                     <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>
                   ))}
