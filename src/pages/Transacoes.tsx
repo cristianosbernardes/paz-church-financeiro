@@ -215,6 +215,7 @@ const Transacoes = () => {
                 ))}
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
       )}
