@@ -17,7 +17,6 @@ const Relatorio = () => {
   const month = searchParams.get('month') || getCurrentYearMonth();
   const [year, monthNum] = month.split('-').map(Number);
 
-
   const [summary, setSummary] = useState<MonthlySummary>({ previousBalance: 0, totalIncome: 0, totalExpense: 0, currentBalance: 0 });
   const [incomes, setIncomes] = useState<Transaction[]>([]);
   const [expenses, setExpenses] = useState<Transaction[]>([]);
@@ -69,6 +68,17 @@ const Relatorio = () => {
 
   const extractDay = (date: string) => parseInt(date.split('-')[2]);
 
+  // Group by category helper
+  const groupByCategory = (txns: Transaction[]) => {
+    const grouped: Record<string, { name: string; total: number }> = {};
+    txns.forEach(t => {
+      const cat = t.categories?.name || 'Sem categoria';
+      grouped[cat] = grouped[cat] || { name: cat, total: 0 };
+      grouped[cat].total += t.amount_cents;
+    });
+    return Object.values(grouped).sort((a, b) => b.total - a.total);
+  };
+
   const exportCSV = () => {
     let csv = `RELATÓRIO DETALHADO - ${monthLabel}\n`;
     csv += `${selectedChurchName}\n\n`;
@@ -76,10 +86,10 @@ const Relatorio = () => {
     csv += `Entrada do Mês;${formatCentsToBRL(summary.totalIncome)}\n`;
     csv += `Total Saída;${formatCentsToBRL(summary.totalExpense)}\n`;
     csv += `Saldo do Mês;${formatCentsToBRL(summary.currentBalance)}\n\n`;
-    csv += `ENTRADAS\nDia;Valor;Descrição\n`;
-    incomes.forEach(t => { csv += `${extractDay(t.date)};${formatCentsToBRL(t.amount_cents)};${t.description}\n`; });
-    csv += `\nSAÍDAS\nDia;Valor;Descrição\n`;
-    expenses.forEach(t => { csv += `${extractDay(t.date)};${formatCentsToBRL(t.amount_cents)};${t.description}\n`; });
+    csv += `ENTRADAS\nDia;Valor;Categoria;Descrição\n`;
+    incomes.forEach(t => { csv += `${extractDay(t.date)};${formatCentsToBRL(t.amount_cents)};${t.categories?.name || ''};${t.description}\n`; });
+    csv += `\nSAÍDAS\nDia;Valor;Categoria;Descrição\n`;
+    expenses.forEach(t => { csv += `${extractDay(t.date)};${formatCentsToBRL(t.amount_cents)};${t.categories?.name || ''};${t.description}\n`; });
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -97,7 +107,7 @@ const Relatorio = () => {
     doc.setFontSize(11);
     doc.text(selectedChurchName, 14, 28);
 
-    doc.setFontSize(10);
+    // Summary table
     const summaryData = [
       ['Saldo Mês Anterior', formatCentsToBRL(summary.previousBalance)],
       ['Entrada do Mês', formatCentsToBRL(summary.totalIncome)],
@@ -115,31 +125,87 @@ const Relatorio = () => {
       margin: { left: 14, right: 14 },
     });
 
-    const afterSummary = (doc as any).lastAutoTable.finalY + 8;
+    let currentY = (doc as any).lastAutoTable.finalY + 6;
 
-    // Entradas table (left half)
+    // Income by category breakdown
+    const incomeCats = groupByCategory(incomes);
+    if (incomeCats.length > 0) {
+      autoTable(doc, {
+        startY: currentY,
+        head: [['Entradas por Categoria', 'Valor']],
+        body: incomeCats.map(c => [c.name, formatCentsToBRL(c.total)]),
+        theme: 'grid',
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [34, 139, 84] },
+        margin: { left: 14, right: 110 },
+        tableWidth: 85,
+      });
+    }
+
+    // Expense by category breakdown
+    const expenseCats = groupByCategory(expenses);
+    if (expenseCats.length > 0) {
+      autoTable(doc, {
+        startY: currentY,
+        head: [['Saídas por Categoria', 'Valor']],
+        body: expenseCats.map(c => [c.name, formatCentsToBRL(c.total)]),
+        theme: 'grid',
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [194, 65, 60] },
+        margin: { left: 110, right: 14 },
+        tableWidth: 85,
+      });
+    }
+
+    currentY = Math.max(
+      incomeCats.length > 0 ? (doc as any).lastAutoTable.finalY : currentY,
+      currentY
+    ) + 6;
+
+    // Detailed income table
     autoTable(doc, {
-      startY: afterSummary,
-      head: [['Dia', 'Valor', 'Descrição']],
-      body: incomes.map(t => [extractDay(t.date), formatCentsToBRL(t.amount_cents), t.description]),
+      startY: currentY,
+      head: [['Dia', 'Valor', 'Categoria', 'Descrição']],
+      body: incomes.map(t => [extractDay(t.date), formatCentsToBRL(t.amount_cents), t.categories?.name || '—', t.description]),
       theme: 'grid',
       styles: { fontSize: 8 },
       headStyles: { fillColor: [34, 139, 84] },
       margin: { left: 14, right: 110 },
       tableWidth: 85,
+      didDrawPage: () => {
+        doc.setFontSize(9);
+        doc.text('ENTRADAS', 14, currentY - 2);
+      },
     });
 
-    // Saídas table (right half)
+    // Detailed expense table
     autoTable(doc, {
-      startY: afterSummary,
-      head: [['Dia', 'Valor', 'Descrição']],
-      body: expenses.map(t => [extractDay(t.date), formatCentsToBRL(t.amount_cents), t.description]),
+      startY: currentY,
+      head: [['Dia', 'Valor', 'Categoria', 'Descrição']],
+      body: expenses.map(t => [extractDay(t.date), formatCentsToBRL(t.amount_cents), t.categories?.name || '—', t.description]),
       theme: 'grid',
       styles: { fontSize: 8 },
       headStyles: { fillColor: [194, 65, 60] },
       margin: { left: 110, right: 14 },
       tableWidth: 85,
+      didDrawPage: () => {
+        doc.setFontSize(9);
+        doc.text('SAÍDAS', 110, currentY - 2);
+      },
     });
+
+    // Signature area
+    const finalY = Math.max((doc as any).lastAutoTable.finalY + 30, 240);
+    doc.setFontSize(9);
+    doc.setDrawColor(100);
+    doc.line(30, finalY, 90, finalY);
+    doc.text('Tesoureiro(a)', 45, finalY + 5);
+    doc.line(120, finalY, 180, finalY);
+    doc.text('Pastor(a) / Presidente', 132, finalY + 5);
+
+    doc.setFontSize(7);
+    doc.setTextColor(150);
+    doc.text(`Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 14, 290);
 
     doc.save(`relatorio-${month}.pdf`);
   };
@@ -214,6 +280,46 @@ const Relatorio = () => {
               </p>
             </div>
           </div>
+
+          {/* Category breakdown */}
+          {(groupByCategory(incomes).length > 0 || groupByCategory(expenses).length > 0) && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {groupByCategory(incomes).length > 0 && (
+                <div className="bg-card rounded-lg border overflow-hidden">
+                  <div className="bg-income/10 px-4 py-3 border-b">
+                    <h3 className="font-bold text-sm text-income uppercase tracking-wider">Entradas por Categoria</h3>
+                  </div>
+                  <Table>
+                    <TableBody>
+                      {groupByCategory(incomes).map(c => (
+                        <TableRow key={c.name}>
+                          <TableCell>{c.name}</TableCell>
+                          <TableCell className="text-right font-semibold text-income">{formatCentsToBRL(c.total)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+              {groupByCategory(expenses).length > 0 && (
+                <div className="bg-card rounded-lg border overflow-hidden">
+                  <div className="bg-expense/10 px-4 py-3 border-b">
+                    <h3 className="font-bold text-sm text-expense uppercase tracking-wider">Saídas por Categoria</h3>
+                  </div>
+                  <Table>
+                    <TableBody>
+                      {groupByCategory(expenses).map(c => (
+                        <TableRow key={c.name}>
+                          <TableCell>{c.name}</TableCell>
+                          <TableCell className="text-right font-semibold text-expense">{formatCentsToBRL(c.total)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Side by side tables */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

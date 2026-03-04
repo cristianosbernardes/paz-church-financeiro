@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useChurch } from '@/contexts/ChurchContext';
-import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 import { formatCentsToBRL, getCurrentYearMonth, MONTH_NAMES } from '@/lib/formatters';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TrendingUp, TrendingDown, Wallet, DollarSign } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 import type { Transaction, MonthlySummary } from '@/types/database';
 
 const COLORS = ['hsl(220, 70%, 45%)', 'hsl(160, 60%, 40%)', 'hsl(40, 90%, 50%)', 'hsl(0, 72%, 51%)', 'hsl(280, 60%, 50%)', 'hsl(30, 80%, 50%)'];
@@ -20,6 +19,7 @@ const Dashboard = () => {
 
   const [summary, setSummary] = useState<MonthlySummary>({ previousBalance: 0, totalIncome: 0, totalExpense: 0, currentBalance: 0 });
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [monthlyTrend, setMonthlyTrend] = useState<{ name: string; entradas: number; saidas: number }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -32,7 +32,6 @@ const Dashboard = () => {
     const startDate = `${month}-01`;
     const endDate = new Date(year, monthNum, 0).toISOString().split('T')[0];
 
-    // Current month transactions
     const { data: txns } = await supabase
       .from('transactions')
       .select('*, categories(*)')
@@ -47,7 +46,6 @@ const Dashboard = () => {
     const totalIncome = currentTxns.filter(t => t.type === 'INCOME').reduce((s, t) => s + t.amount_cents, 0);
     const totalExpense = currentTxns.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + t.amount_cents, 0);
 
-    // Previous balance: all transactions before this month
     const { data: prevTxns } = await supabase
       .from('transactions')
       .select('type, amount_cents')
@@ -64,6 +62,34 @@ const Dashboard = () => {
       totalExpense,
       currentBalance: previousBalance + totalIncome - totalExpense,
     });
+
+    // Fetch 6-month trend
+    const trendData: { name: string; entradas: number; saidas: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(year, monthNum - 1 - i, 1);
+      const ty = d.getFullYear();
+      const tm = d.getMonth() + 1;
+      const tStart = `${ty}-${String(tm).padStart(2, '0')}-01`;
+      const tEnd = new Date(ty, tm, 0).toISOString().split('T')[0];
+
+      const { data: tTxns } = await supabase
+        .from('transactions')
+        .select('type, amount_cents')
+        .eq('church_id', selectedChurchId)
+        .gte('date', tStart)
+        .lte('date', tEnd);
+
+      const inc = (tTxns || []).filter(t => t.type === 'INCOME').reduce((s, t) => s + t.amount_cents, 0) / 100;
+      const exp = (tTxns || []).filter(t => t.type === 'EXPENSE').reduce((s, t) => s + t.amount_cents, 0) / 100;
+
+      trendData.push({
+        name: `${MONTH_NAMES[tm - 1].substring(0, 3)}`,
+        entradas: inc,
+        saidas: exp,
+      });
+    }
+    setMonthlyTrend(trendData);
+
     setLoading(false);
   };
 
@@ -148,6 +174,26 @@ const Dashboard = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* 6-month trend comparison */}
+            <Card className="shadow-sm lg:col-span-2">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Comparativo Mensal (Últimos 6 meses)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={monthlyTrend}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                    <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                    <Tooltip formatter={(v: number) => `R$ ${v.toFixed(2)}`} />
+                    <Legend />
+                    <Bar dataKey="entradas" name="Entradas" fill="hsl(var(--income))" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="saidas" name="Saídas" fill="hsl(var(--expense))" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
             {/* Line chart - balance evolution */}
             <Card className="shadow-sm">
               <CardHeader className="pb-2">
