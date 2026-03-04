@@ -209,95 +209,76 @@ const ChurchesTab = () => {
 
 // --- Members Tab ---
 const MembersTab = () => {
-  const { selectedChurchId } = useChurch();
+  const { memberships } = useChurch();
   const [members, setMembers] = useState<any[]>([]);
+  const [churches, setChurches] = useState<Church[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [email, setEmail] = useState('');
-  const [role, setRole] = useState<AppRole>('LEITOR');
-  const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<any | null>(null);
+  const [name, setName] = useState('');
+  const [churchId, setChurchId] = useState('');
+  const [role, setRole] = useState('Membro');
+  const [saving, setSaving] = useState(false);
 
-  const fetchMembers = async () => {
-    const { data } = await supabase
-      .from('memberships')
-      .select('*, profiles(full_name)')
-      .eq('church_id', selectedChurchId)
-      .order('created_at');
-    setMembers(data || []);
+  const userChurchIds = memberships.map(m => m.church_id);
+
+  const fetchData = async () => {
+    const [membersRes, churchesRes] = await Promise.all([
+      supabase.from('members').select('*, churches(name)').in('church_id', userChurchIds).order('full_name'),
+      supabase.from('churches').select('*').in('id', userChurchIds).order('name'),
+    ]);
+    setMembers(membersRes.data || []);
+    setChurches(churchesRes.data || []);
   };
 
-  useEffect(() => { if (selectedChurchId) fetchMembers(); }, [selectedChurchId]);
+  useEffect(() => { if (userChurchIds.length) fetchData(); }, [memberships]);
 
-  const addMember = async () => {
-    if (!email.trim() || !selectedChurchId) return;
-    setAdding(true);
-    try {
-      // Find user by email via profiles (match full_name which is set to email on signup)
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id, full_name')
-        .or(`full_name.eq.${email.trim()}`)
-        .maybeSingle();
+  const openNew = () => {
+    setEditing(null);
+    setName('');
+    setChurchId(userChurchIds[0] || '');
+    setRole('Membro');
+    setDialogOpen(true);
+  };
 
-      if (!profile) {
-        toast.error('Usuário não encontrado. Verifique se o e-mail está cadastrado.');
-        setAdding(false);
-        return;
-      }
+  const openEdit = (m: any) => {
+    setEditing(m);
+    setName(m.full_name);
+    setChurchId(m.church_id);
+    setRole(m.role || 'Membro');
+    setDialogOpen(true);
+  };
 
-      // Check if already a member
-      const { data: existing } = await supabase
-        .from('memberships')
-        .select('id')
-        .eq('church_id', selectedChurchId)
-        .eq('user_id', profile.id)
-        .maybeSingle();
-
-      if (existing) {
-        toast.error('Este usuário já é membro desta igreja.');
-        setAdding(false);
-        return;
-      }
-
-      const { error } = await supabase.from('memberships').insert({
-        church_id: selectedChurchId,
-        user_id: profile.id,
-        role,
-      });
-
-      if (error) {
-        toast.error('Erro ao adicionar membro: ' + error.message);
-      } else {
-        toast.success('Membro adicionado com sucesso!');
-        setDialogOpen(false);
-        setEmail('');
-        setRole('LEITOR');
-        fetchMembers();
-      }
-    } catch (err) {
-      toast.error('Erro inesperado ao adicionar membro.');
+  const save = async () => {
+    if (!name.trim() || !churchId) return;
+    setSaving(true);
+    const payload = { full_name: name.trim(), church_id: churchId, role };
+    if (editing) {
+      const { error } = await supabase.from('members').update(payload).eq('id', editing.id);
+      if (error) { toast.error('Erro ao atualizar: ' + error.message); }
+      else { toast.success('Membro atualizado'); }
+    } else {
+      const { error } = await supabase.from('members').insert(payload);
+      if (error) { toast.error('Erro ao criar: ' + error.message); }
+      else { toast.success('Membro adicionado'); }
     }
-    setAdding(false);
+    setSaving(false);
+    setDialogOpen(false);
+    fetchData();
   };
 
-  const updateRole = async (id: string, newRole: AppRole) => {
-    await supabase.from('memberships').update({ role: newRole }).eq('id', id);
-    toast.success('Papel atualizado');
-    fetchMembers();
-  };
-
-  const remove = async (id: string) => {
-    if (!confirm('Remover membro?')) return;
-    await supabase.from('memberships').delete().eq('id', id);
-    toast.success('Removido');
-    fetchMembers();
+  const del = async (id: string) => {
+    if (!confirm('Excluir membro?')) return;
+    await supabase.from('members').delete().eq('id', id);
+    toast.success('Membro excluído');
+    fetchData();
   };
 
   return (
     <Card className="mt-4 shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-base">Membros desta Igreja</CardTitle>
-        <Button size="sm" onClick={() => { setEmail(''); setRole('LEITOR'); setDialogOpen(true); }}>
-          <Plus className="h-4 w-4 mr-1" /> Adicionar
+        <CardTitle className="text-base">Membros</CardTitle>
+        <Button size="sm" onClick={openNew}>
+          <Plus className="h-4 w-4 mr-1" /> Novo Membro
         </Button>
       </CardHeader>
       <CardContent className="p-0">
@@ -305,6 +286,7 @@ const MembersTab = () => {
           <TableHeader>
             <TableRow>
               <TableHead>Nome</TableHead>
+              <TableHead>Igreja</TableHead>
               <TableHead>Papel</TableHead>
               <TableHead className="w-20">Ações</TableHead>
             </TableRow>
@@ -312,23 +294,18 @@ const MembersTab = () => {
           <TableBody>
             {members.map(m => (
               <TableRow key={m.id}>
-                <TableCell>{m.profiles?.full_name || m.user_id}</TableCell>
+                <TableCell>{m.full_name}</TableCell>
+                <TableCell className="text-xs">{m.churches?.name}</TableCell>
+                <TableCell className="text-xs">{m.role || 'Membro'}</TableCell>
                 <TableCell>
-                  <Select value={m.role} onValueChange={(v: AppRole) => updateRole(m.id, v)}>
-                    <SelectTrigger className="h-8 w-32 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ADMIN">Admin</SelectItem>
-                      <SelectItem value="TESOURARIA">Tesouraria</SelectItem>
-                      <SelectItem value="LEITOR">Leitor</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => remove(m.id)}>
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(m)}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => del(m.id)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -337,19 +314,29 @@ const MembersTab = () => {
       </CardContent>
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Adicionar Membro</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editing ? 'Editar' : 'Novo'} Membro</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <Input placeholder="E-mail do usuário" value={email} onChange={e => setEmail(e.target.value)} />
-            <Select value={role} onValueChange={(v: AppRole) => setRole(v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+            <Input placeholder="Nome completo" value={name} onChange={e => setName(e.target.value)} />
+            <Select value={churchId} onValueChange={setChurchId}>
+              <SelectTrigger><SelectValue placeholder="Selecione a igreja" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="ADMIN">Admin</SelectItem>
-                <SelectItem value="TESOURARIA">Tesouraria</SelectItem>
-                <SelectItem value="LEITOR">Leitor</SelectItem>
+                {churches.map(c => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
-            <Button className="w-full" onClick={addMember} disabled={adding}>
-              {adding ? 'Adicionando...' : 'Adicionar'}
+            <Select value={role} onValueChange={setRole}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Membro">Membro</SelectItem>
+                <SelectItem value="Líder">Líder</SelectItem>
+                <SelectItem value="Pastor">Pastor</SelectItem>
+                <SelectItem value="Diácono">Diácono</SelectItem>
+                <SelectItem value="Tesoureiro">Tesoureiro</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button className="w-full" onClick={save} disabled={saving}>
+              {saving ? 'Salvando...' : 'Salvar'}
             </Button>
           </div>
         </DialogContent>
