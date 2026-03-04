@@ -47,6 +47,8 @@ export const ChurchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           setSelectedChurchId(stored);
         } else if (data.length === 1) {
           setSelectedChurchId(data[0].church_id);
+        } else if (data.length > 1) {
+          setSelectedChurchId(ALL_CHURCHES);
         }
       }
       setLoading(false);
