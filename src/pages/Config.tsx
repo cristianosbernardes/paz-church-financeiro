@@ -96,7 +96,7 @@ const CategoriesTab = () => {
           <TableHeader>
             <TableRow>
               <TableHead>Nome</TableHead>
-              <TableHead>Tipo</TableHead>
+              <TableHead>Entrada/Saída</TableHead>
               <TableHead className="w-20">Ações</TableHead>
             </TableRow>
           </TableHeader>
@@ -104,7 +104,7 @@ const CategoriesTab = () => {
             {categories.map(c => (
               <TableRow key={c.id}>
                 <TableCell>{c.name}</TableCell>
-                <TableCell className="text-xs">{c.type}</TableCell>
+                <TableCell className="text-xs">{c.type === 'BOTH' ? 'Ambos' : c.type === 'INCOME' ? 'Entrada' : 'Saída'}</TableCell>
                 <TableCell>
                   <div className="flex gap-1">
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditing(c); setName(c.name); setType(c.type); setDialogOpen(true); }}>
