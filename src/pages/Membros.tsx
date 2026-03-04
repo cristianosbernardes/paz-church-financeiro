@@ -15,6 +15,7 @@ import type { Church } from '@/types/database';
 const Membros = () => {
   const { memberships, userRole } = useChurch();
   const [members, setMembers] = useState<any[]>([]);
+  const [churches, setChurches] = useState<Church[]>([]);
   const [roles, setRoles] = useState<any[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
