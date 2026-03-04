@@ -140,15 +140,15 @@ const Transacoes = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="text-2xl font-bold">Transações</h1>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold">Transações</h1>
         {canEdit && (
-          <div className="flex gap-2">
-            <Button onClick={() => openNew('INCOME')} className="bg-income hover:bg-income/90 text-income-foreground">
-              <TrendingUp className="h-4 w-4 mr-1" /> Nova Entrada
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button onClick={() => openNew('INCOME')} className="bg-income hover:bg-income/90 text-income-foreground flex-1 sm:flex-none text-xs sm:text-sm">
+              <TrendingUp className="h-4 w-4 mr-1" /> Entrada
             </Button>
-            <Button onClick={() => openNew('EXPENSE')} className="bg-expense hover:bg-expense/90 text-expense-foreground">
-              <TrendingDown className="h-4 w-4 mr-1" /> Nova Saída
+            <Button onClick={() => openNew('EXPENSE')} className="bg-expense hover:bg-expense/90 text-expense-foreground flex-1 sm:flex-none text-xs sm:text-sm">
+              <TrendingDown className="h-4 w-4 mr-1" /> Saída
             </Button>
           </div>
         )}
@@ -159,9 +159,9 @@ const Transacoes = () => {
           <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
         </div>
       ) : (
-        <Card className="shadow-sm">
+        <Card className="shadow-sm overflow-hidden">
           <CardContent className="p-0">
-            <Table>
+            <div className="overflow-x-auto">
               <TableHeader>
                 <TableRow>
                   <TableHead>Data</TableHead>
