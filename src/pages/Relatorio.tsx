@@ -11,18 +11,27 @@ import type { Transaction, MonthlySummary } from '@/types/database';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+const ALL_CHURCHES = '__ALL__';
+
 const Relatorio = () => {
   const { selectedChurchId, selectedChurchName, memberships } = useChurch();
   const [searchParams, setSearchParams] = useSearchParams();
   const month = searchParams.get('month') || getCurrentYearMonth();
   const [year, monthNum] = month.split('-').map(Number);
 
-  // Local church filter (defaults to sidebar selection)
-  const [localChurchId, setLocalChurchId] = useState(selectedChurchId || '');
-  const localChurchName = memberships.find(m => m.church_id === localChurchId)?.churches?.name || selectedChurchName;
+  // Local church filter (defaults to sidebar selection, supports "all")
+  const [localChurchId, setLocalChurchId] = useState(selectedChurchId || ALL_CHURCHES);
+
+  const allChurchIds = memberships.map(m => m.church_id);
+  const activeChurchIds = localChurchId === ALL_CHURCHES ? allChurchIds : [localChurchId];
+  const localChurchName = localChurchId === ALL_CHURCHES
+    ? 'Todas as Igrejas'
+    : memberships.find(m => m.church_id === localChurchId)?.churches?.name || selectedChurchName;
 
   useEffect(() => {
-    if (selectedChurchId && !localChurchId) setLocalChurchId(selectedChurchId);
+    if (selectedChurchId && localChurchId !== ALL_CHURCHES && !localChurchId) {
+      setLocalChurchId(selectedChurchId);
+    }
   }, [selectedChurchId]);
 
   const [summary, setSummary] = useState<MonthlySummary>({ previousBalance: 0, totalIncome: 0, totalExpense: 0, currentBalance: 0 });
@@ -31,9 +40,9 @@ const Relatorio = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!localChurchId) return;
+    if (activeChurchIds.length === 0) return;
     fetchData();
-  }, [localChurchId, month]);
+  }, [localChurchId, month, memberships.length]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -43,7 +52,7 @@ const Relatorio = () => {
     const { data: txns } = await supabase
       .from('transactions')
       .select('*, categories(*)')
-      .eq('church_id', localChurchId)
+      .in('church_id', activeChurchIds)
       .gte('date', startDate)
       .lte('date', endDate)
       .order('date');
@@ -58,7 +67,7 @@ const Relatorio = () => {
     const { data: prevTxns } = await supabase
       .from('transactions')
       .select('type, amount_cents')
-      .eq('church_id', localChurchId)
+      .in('church_id', activeChurchIds)
       .lt('date', startDate);
 
     const previousBalance = (prevTxns || []).reduce((s, t) => s + (t.type === 'INCOME' ? t.amount_cents : -t.amount_cents), 0);
@@ -161,6 +170,7 @@ const Relatorio = () => {
               <SelectValue placeholder="Selecionar igreja" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value={ALL_CHURCHES}>📋 Todas as Igrejas</SelectItem>
               {memberships.map(m => (
                 <SelectItem key={m.church_id} value={m.church_id}>
                   {m.churches?.name ?? m.church_id}
