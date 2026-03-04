@@ -272,6 +272,20 @@ const Transacoes = () => {
               </Select>
             </div>
             <div className="space-y-1">
+              <label className="text-sm font-medium">Membro (opcional)</label>
+              <Select value={formMemberId} onValueChange={setFormMemberId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Vincular a um membro" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Nenhum</SelectItem>
+                  {membersList.filter(m => !formChurchId || m.church_id === formChurchId).map(m => (
+                    <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
               <label className="text-sm font-medium">Comprovante (opcional)</label>
               <Input type="file" accept="image/*,.pdf" onChange={e => setFormFile(e.target.files?.[0] || null)} />
             </div>
