@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -72,10 +73,13 @@ const CategoriesTab = () => {
     fetch();
   };
 
-  const del = async (id: string) => {
-    if (!confirm('Excluir categoria?')) return;
-    await supabase.from('categories').delete().eq('id', id);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const confirmDel = async () => {
+    if (!deleteId) return;
+    await supabase.from('categories').delete().eq('id', deleteId);
     toast.success('Excluída');
+    setDeleteId(null);
     fetch();
   };
 
@@ -106,7 +110,7 @@ const CategoriesTab = () => {
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditing(c); setName(c.name); setType(c.type); setDialogOpen(true); }}>
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => del(c.id)}>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(c.id)}>
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
@@ -133,6 +137,18 @@ const CategoriesTab = () => {
           </div>
         </DialogContent>
       </Dialog>
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir categoria</AlertDialogTitle>
+            <AlertDialogDescription>Tem certeza que deseja excluir esta categoria? Esta ação não pode ser desfeita.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDel} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };
@@ -266,10 +282,13 @@ const MembersTab = () => {
     fetchData();
   };
 
-  const del = async (id: string) => {
-    if (!confirm('Excluir membro?')) return;
-    await supabase.from('members').delete().eq('id', id);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const confirmDel = async () => {
+    if (!deleteId) return;
+    await supabase.from('members').delete().eq('id', deleteId);
     toast.success('Membro excluído');
+    setDeleteId(null);
     fetchData();
   };
 
@@ -302,7 +321,7 @@ const MembersTab = () => {
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(m)}>
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => del(m.id)}>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(m.id)}>
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
@@ -341,6 +360,18 @@ const MembersTab = () => {
           </div>
         </DialogContent>
       </Dialog>
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir membro</AlertDialogTitle>
+            <AlertDialogDescription>Tem certeza que deseja excluir este membro? Esta ação não pode ser desfeita.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDel} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };
