@@ -121,7 +121,7 @@ const CategoriesTab = () => {
         </Table>
       </CardContent>
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-[95vw] sm:max-w-sm">
           <DialogHeader><DialogTitle>{editing ? 'Editar' : 'Nova'} Categoria</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <Input placeholder="Nome" value={name} onChange={e => setName(e.target.value)} />
@@ -229,7 +229,7 @@ const ChurchesTab = () => {
         </Table>
       </CardContent>
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-[95vw] sm:max-w-sm">
           <DialogHeader><DialogTitle>{editId ? 'Editar' : 'Nova'} Igreja</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <Input placeholder="Nome da igreja" value={name} onChange={e => setName(e.target.value)} />
@@ -333,7 +333,7 @@ const RolesTab = () => {
         </Table>
       </CardContent>
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-[95vw] sm:max-w-sm">
           <DialogHeader><DialogTitle>{editing ? 'Editar' : 'Novo'} Cargo</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <Input placeholder="Nome do cargo" value={name} onChange={e => setName(e.target.value)} />
