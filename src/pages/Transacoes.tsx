@@ -106,7 +106,7 @@ const Transacoes = () => {
       amount_cents,
       description: formDescription,
       category_id: formCategoryId || null,
-      member_id: formMemberId || null,
+      member_id: formMemberId && formMemberId !== 'none' ? formMemberId : null,
       receipt_url,
       created_by: user!.id,
     };
