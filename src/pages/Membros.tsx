@@ -152,19 +152,19 @@ const Membros = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Membros</h1>
+    <div className="space-y-4 sm:space-y-6">
+      <h1 className="text-xl sm:text-2xl font-bold">Membros</h1>
       <Card className="shadow-sm">
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <CardTitle className="text-base">Lista de Membros</CardTitle>
           {canWrite && (
-            <Button size="sm" onClick={openNew}>
+            <Button size="sm" onClick={openNew} className="text-xs sm:text-sm">
               <Plus className="h-4 w-4 mr-1" /> Novo Membro
             </Button>
           )}
         </CardHeader>
-        <CardContent className="p-0">
-          <Table>
+        <CardContent className="p-0 overflow-x-auto">
+          <Table className="min-w-[550px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Nome</TableHead>
@@ -211,7 +211,7 @@ const Membros = () => {
 
       {/* Edit/Create Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{editing ? 'Editar' : 'Novo'} Membro</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1">
