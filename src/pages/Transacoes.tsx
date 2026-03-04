@@ -168,14 +168,15 @@ const Transacoes = () => {
                   <TableHead>Tipo</TableHead>
                   <TableHead>Valor</TableHead>
                   <TableHead>Categoria</TableHead>
-                  <TableHead>Descrição</TableHead>
-                  <TableHead>Comprov.</TableHead>
+                   <TableHead>Descrição</TableHead>
+                   <TableHead>Membro</TableHead>
+                   <TableHead>Comprov.</TableHead>
                   {canEdit && <TableHead className="w-20">Ações</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {transactions.length === 0 ? (
-                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-12">Nenhuma transação encontrada</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-12">Nenhuma transação encontrada</TableCell></TableRow>
                 ) : transactions.map(t => (
                   <TableRow key={t.id}>
                     <TableCell className="font-mono text-sm">{new Date(t.date + 'T12:00:00').toLocaleDateString('pt-BR')}</TableCell>
@@ -190,7 +191,8 @@ const Transacoes = () => {
                       {formatCentsToBRL(t.amount_cents)}
                     </TableCell>
                     <TableCell className="text-sm">{t.categories?.name || '—'}</TableCell>
-                    <TableCell className="max-w-[200px] truncate">{t.description}</TableCell>
+                     <TableCell className="max-w-[200px] truncate">{t.description}</TableCell>
+                     <TableCell className="text-xs">{(t as any).members?.full_name || '—'}</TableCell>
                     <TableCell>
                       {t.receipt_url ? (
                         <a href={t.receipt_url} target="_blank" rel="noopener" className="text-primary text-xs underline">Ver</a>
