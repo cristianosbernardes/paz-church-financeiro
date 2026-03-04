@@ -253,4 +253,108 @@ const ChurchesTab = () => {
   );
 };
 
+// --- Roles Tab ---
+const RolesTab = () => {
+  const { selectedChurchId } = useChurch();
+  const [roles, setRoles] = useState<any[]>([]);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<any | null>(null);
+  const [name, setName] = useState('');
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const fetchRoles = async () => {
+    const { data } = await supabase
+      .from('member_roles')
+      .select('*')
+      .eq('church_id', selectedChurchId)
+      .order('name');
+    setRoles(data || []);
+  };
+
+  useEffect(() => { if (selectedChurchId) fetchRoles(); }, [selectedChurchId]);
+
+  const save = async () => {
+    if (!name.trim()) return;
+    const payload = { church_id: selectedChurchId, name: name.trim() };
+    if (editing) {
+      const { error } = await supabase.from('member_roles').update({ name: name.trim() }).eq('id', editing.id);
+      if (error) toast.error('Erro: ' + error.message);
+      else toast.success('Cargo atualizado');
+    } else {
+      const { error } = await supabase.from('member_roles').insert(payload);
+      if (error) toast.error('Erro: ' + error.message);
+      else toast.success('Cargo criado');
+    }
+    setDialogOpen(false);
+    fetchRoles();
+  };
+
+  const confirmDel = async () => {
+    if (!deleteId) return;
+    await supabase.from('member_roles').delete().eq('id', deleteId);
+    toast.success('Cargo excluído');
+    setDeleteId(null);
+    fetchRoles();
+  };
+
+  return (
+    <Card className="mt-4 shadow-sm">
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle className="text-base">Cargos de Membros</CardTitle>
+        <Button size="sm" onClick={() => { setEditing(null); setName(''); setDialogOpen(true); }}>
+          <Plus className="h-4 w-4 mr-1" /> Novo Cargo
+        </Button>
+      </CardHeader>
+      <CardContent className="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nome</TableHead>
+              <TableHead className="w-20">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {roles.map(r => (
+              <TableRow key={r.id}>
+                <TableCell>{r.name}</TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditing(r); setName(r.name); setDialogOpen(true); }}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(r.id)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>{editing ? 'Editar' : 'Novo'} Cargo</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <Input placeholder="Nome do cargo" value={name} onChange={e => setName(e.target.value)} />
+            <Button className="w-full" onClick={save}>Salvar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir cargo</AlertDialogTitle>
+            <AlertDialogDescription>Tem certeza que deseja excluir este cargo? Membros com este cargo não serão excluídos.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDel} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </Card>
+  );
+};
+
 export default Config;
