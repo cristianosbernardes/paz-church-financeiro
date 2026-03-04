@@ -39,6 +39,9 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
                 <SelectValue placeholder="Selecionar igreja" />
               </SelectTrigger>
               <SelectContent>
+                {memberships.length > 1 && (
+                  <SelectItem value={ALL_CHURCHES}>📋 Todas as Igrejas</SelectItem>
+                )}
                 {memberships.map(m => (
                   <SelectItem key={m.church_id} value={m.church_id}>
                     {m.churches?.name ?? m.church_id}
