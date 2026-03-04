@@ -24,6 +24,7 @@ const SidebarContent: React.FC<{ onNavigate?: () => void }> = ({ onNavigate }) =
 
   const visibleNav = navItems.filter(item => {
     if (item.to === '/config' && userRole !== 'ADMIN') return false;
+    if (item.to === '/fechamento' && userRole !== 'ADMIN') return false;
     return true;
   });
 
