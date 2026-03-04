@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useChurch } from '@/contexts/ChurchContext';
+import { useChurch, ALL_CHURCHES } from '@/contexts/ChurchContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { LayoutDashboard, FileText, List, Settings, LogOut, Church } from 'lucide-react';
@@ -39,6 +39,9 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
                 <SelectValue placeholder="Selecionar igreja" />
               </SelectTrigger>
               <SelectContent>
+                {memberships.length > 1 && (
+                  <SelectItem value={ALL_CHURCHES}>📋 Todas as Igrejas</SelectItem>
+                )}
                 {memberships.map(m => (
                   <SelectItem key={m.church_id} value={m.church_id}>
                     {m.churches?.name ?? m.church_id}

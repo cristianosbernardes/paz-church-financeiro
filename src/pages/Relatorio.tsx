@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useChurch } from '@/contexts/ChurchContext';
+import { useChurch, ALL_CHURCHES } from '@/contexts/ChurchContext';
 import { supabase } from '@/lib/supabaseClient';
 import { formatCentsToBRL, getCurrentYearMonth, MONTH_NAMES, getMonthLabel } from '@/lib/formatters';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -11,28 +11,12 @@ import type { Transaction, MonthlySummary } from '@/types/database';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-const ALL_CHURCHES = '__ALL__';
-
 const Relatorio = () => {
-  const { selectedChurchId, selectedChurchName, memberships } = useChurch();
+  const { selectedChurchId, selectedChurchName, activeChurchIds, memberships, setSelectedChurchId } = useChurch();
   const [searchParams, setSearchParams] = useSearchParams();
   const month = searchParams.get('month') || getCurrentYearMonth();
   const [year, monthNum] = month.split('-').map(Number);
 
-  // Local church filter (defaults to sidebar selection, supports "all")
-  const [localChurchId, setLocalChurchId] = useState(selectedChurchId || ALL_CHURCHES);
-
-  const allChurchIds = memberships.map(m => m.church_id);
-  const activeChurchIds = localChurchId === ALL_CHURCHES ? allChurchIds : [localChurchId];
-  const localChurchName = localChurchId === ALL_CHURCHES
-    ? 'Todas as Igrejas'
-    : memberships.find(m => m.church_id === localChurchId)?.churches?.name || selectedChurchName;
-
-  useEffect(() => {
-    if (selectedChurchId && localChurchId !== ALL_CHURCHES && !localChurchId) {
-      setLocalChurchId(selectedChurchId);
-    }
-  }, [selectedChurchId]);
 
   const [summary, setSummary] = useState<MonthlySummary>({ previousBalance: 0, totalIncome: 0, totalExpense: 0, currentBalance: 0 });
   const [incomes, setIncomes] = useState<Transaction[]>([]);
@@ -42,7 +26,7 @@ const Relatorio = () => {
   useEffect(() => {
     if (activeChurchIds.length === 0) return;
     fetchData();
-  }, [localChurchId, month, memberships.length]);
+  }, [selectedChurchId, month, memberships.length]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -87,7 +71,7 @@ const Relatorio = () => {
 
   const exportCSV = () => {
     let csv = `RELATÓRIO DETALHADO - ${monthLabel}\n`;
-    csv += `${localChurchName}\n\n`;
+    csv += `${selectedChurchName}\n\n`;
     csv += `Saldo Mês Anterior;${formatCentsToBRL(summary.previousBalance)}\n`;
     csv += `Entrada do Mês;${formatCentsToBRL(summary.totalIncome)}\n`;
     csv += `Total Saída;${formatCentsToBRL(summary.totalExpense)}\n`;
@@ -111,7 +95,7 @@ const Relatorio = () => {
     doc.setFontSize(16);
     doc.text(`RELATÓRIO DETALHADO - ${monthLabel}`, 14, 20);
     doc.setFontSize(11);
-    doc.text(localChurchName, 14, 28);
+    doc.text(selectedChurchName, 14, 28);
 
     doc.setFontSize(10);
     const summaryData = [
@@ -165,7 +149,7 @@ const Relatorio = () => {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-bold">Relatório Mensal</h1>
         <div className="flex items-center gap-3 flex-wrap">
-          <Select value={localChurchId} onValueChange={setLocalChurchId}>
+          <Select value={selectedChurchId ?? ''} onValueChange={setSelectedChurchId}>
             <SelectTrigger className="w-52">
               <SelectValue placeholder="Selecionar igreja" />
             </SelectTrigger>
@@ -206,7 +190,7 @@ const Relatorio = () => {
           {/* Header */}
           <div className="bg-primary text-primary-foreground rounded-lg p-6 text-center">
             <h2 className="text-xl font-bold">RELATÓRIO DETALHADO - {monthLabel.toUpperCase()}</h2>
-            <p className="text-sm opacity-80 mt-1">{localChurchName}</p>
+            <p className="text-sm opacity-80 mt-1">{selectedChurchName}</p>
           </div>
 
           {/* Summary cards */}
