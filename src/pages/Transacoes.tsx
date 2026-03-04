@@ -222,7 +222,7 @@ const Transacoes = () => {
 
       {/* Dialog for create/edit */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing ? 'Editar' : 'Nova'} {formType === 'INCOME' ? 'Entrada' : 'Saída'}</DialogTitle>
           </DialogHeader>
