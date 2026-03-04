@@ -64,6 +64,48 @@ export type Database = {
         }
         Relationships: []
       }
+      member_relatives: {
+        Row: {
+          created_at: string
+          id: string
+          member_id: string
+          relationship: string | null
+          relative_member_id: string | null
+          relative_name: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          member_id: string
+          relationship?: string | null
+          relative_member_id?: string | null
+          relative_name?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          member_id?: string
+          relationship?: string | null
+          relative_member_id?: string | null
+          relative_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_relatives_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_relatives_relative_member_id_fkey"
+            columns: ["relative_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       member_roles: {
         Row: {
           church_id: string
@@ -96,6 +138,7 @@ export type Database = {
       members: {
         Row: {
           church_id: string
+          conversion_date: string | null
           created_at: string | null
           email: string | null
           full_name: string
@@ -106,6 +149,7 @@ export type Database = {
         }
         Insert: {
           church_id: string
+          conversion_date?: string | null
           created_at?: string | null
           email?: string | null
           full_name: string
@@ -116,6 +160,7 @@ export type Database = {
         }
         Update: {
           church_id?: string
+          conversion_date?: string | null
           created_at?: string | null
           email?: string | null
           full_name?: string
@@ -246,6 +291,7 @@ export type Database = {
           date: string
           description: string
           id: string
+          member_id: string | null
           receipt_url: string | null
           type: Database["public"]["Enums"]["tx_type"]
         }
@@ -258,6 +304,7 @@ export type Database = {
           date: string
           description: string
           id?: string
+          member_id?: string | null
           receipt_url?: string | null
           type: Database["public"]["Enums"]["tx_type"]
         }
@@ -270,6 +317,7 @@ export type Database = {
           date?: string
           description?: string
           id?: string
+          member_id?: string | null
           receipt_url?: string | null
           type?: Database["public"]["Enums"]["tx_type"]
         }
@@ -293,6 +341,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
             referencedColumns: ["id"]
           },
         ]
