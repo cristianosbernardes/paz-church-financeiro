@@ -291,7 +291,18 @@ const Transacoes = () => {
             </div>
             <div className="space-y-1">
               <label className="text-sm font-medium">Comprovante (opcional)</label>
-              <Input type="file" accept="image/*,.pdf" onChange={e => setFormFile(e.target.files?.[0] || null)} />
+              <label className="flex items-center gap-2 px-3 py-2 border border-input rounded-md cursor-pointer hover:bg-accent transition-colors">
+                <Upload className="h-4 w-4 text-primary shrink-0" />
+                <span className="text-sm text-primary font-medium truncate">
+                  {formFile ? formFile.name : 'Escolher arquivo'}
+                </span>
+                <input 
+                  type="file" 
+                  accept="image/*,.pdf" 
+                  className="hidden" 
+                  onChange={e => setFormFile(e.target.files?.[0] || null)} 
+                />
+              </label>
             </div>
             <Button className="w-full" onClick={handleSave} disabled={saving}>
               {saving ? 'Salvando...' : 'Salvar'}
