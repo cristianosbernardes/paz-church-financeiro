@@ -27,13 +27,13 @@ const Config = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Configurações</h1>
+    <div className="space-y-4 sm:space-y-6">
+      <h1 className="text-xl sm:text-2xl font-bold">Configurações</h1>
       <Tabs defaultValue="categories">
-        <TabsList>
-          <TabsTrigger value="categories">Categorias</TabsTrigger>
-          <TabsTrigger value="churches">Igrejas</TabsTrigger>
-          <TabsTrigger value="roles">Cargos</TabsTrigger>
+        <TabsList className="w-full sm:w-auto grid grid-cols-3 sm:inline-flex">
+          <TabsTrigger value="categories" className="text-xs sm:text-sm">Categorias</TabsTrigger>
+          <TabsTrigger value="churches" className="text-xs sm:text-sm">Igrejas</TabsTrigger>
+          <TabsTrigger value="roles" className="text-xs sm:text-sm">Cargos</TabsTrigger>
         </TabsList>
         <TabsContent value="categories"><CategoriesTab /></TabsContent>
         <TabsContent value="churches"><ChurchesTab /></TabsContent>
