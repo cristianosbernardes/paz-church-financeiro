@@ -56,23 +56,23 @@ const MembroDetalhe = () => {
   const totalExpense = transactions.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + t.amount_cents, 0);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/membros')}>
-          <ArrowLeft className="h-5 w-5" />
+      <div className="flex items-center gap-2 sm:gap-3">
+        <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10" onClick={() => navigate('/membros')}>
+          <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
         </Button>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold">{member.full_name}</h1>
-          <p className="text-sm text-muted-foreground">{member.churches?.name}</p>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-lg sm:text-2xl font-bold truncate">{member.full_name}</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">{member.churches?.name}</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => navigate(`/membros?edit=${member.id}`)}>
-          <Pencil className="h-4 w-4 mr-1" /> Editar
+        <Button variant="outline" size="sm" className="text-xs sm:text-sm shrink-0" onClick={() => navigate(`/membros?edit=${member.id}`)}>
+          <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" /> Editar
         </Button>
       </div>
 
       {/* Info Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card>
           <CardContent className="pt-4 pb-4 flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -147,10 +147,10 @@ const MembroDetalhe = () => {
       {/* Transactions */}
       <Card className="shadow-sm">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Histórico de Transações ({transactions.length})</CardTitle>
+          <CardTitle className="text-sm sm:text-base">Histórico de Transações ({transactions.length})</CardTitle>
         </CardHeader>
-        <CardContent className="p-0">
-          <Table>
+        <CardContent className="p-0 overflow-x-auto">
+          <Table className="min-w-[500px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Data</TableHead>

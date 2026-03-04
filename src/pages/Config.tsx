@@ -27,13 +27,13 @@ const Config = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Configurações</h1>
+    <div className="space-y-4 sm:space-y-6">
+      <h1 className="text-xl sm:text-2xl font-bold">Configurações</h1>
       <Tabs defaultValue="categories">
-        <TabsList>
-          <TabsTrigger value="categories">Categorias</TabsTrigger>
-          <TabsTrigger value="churches">Igrejas</TabsTrigger>
-          <TabsTrigger value="roles">Cargos</TabsTrigger>
+        <TabsList className="w-full sm:w-auto grid grid-cols-3 sm:inline-flex">
+          <TabsTrigger value="categories" className="text-xs sm:text-sm">Categorias</TabsTrigger>
+          <TabsTrigger value="churches" className="text-xs sm:text-sm">Igrejas</TabsTrigger>
+          <TabsTrigger value="roles" className="text-xs sm:text-sm">Cargos</TabsTrigger>
         </TabsList>
         <TabsContent value="categories"><CategoriesTab /></TabsContent>
         <TabsContent value="churches"><ChurchesTab /></TabsContent>
@@ -121,7 +121,7 @@ const CategoriesTab = () => {
         </Table>
       </CardContent>
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-[95vw] sm:max-w-sm">
           <DialogHeader><DialogTitle>{editing ? 'Editar' : 'Nova'} Categoria</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <Input placeholder="Nome" value={name} onChange={e => setName(e.target.value)} />
@@ -229,7 +229,7 @@ const ChurchesTab = () => {
         </Table>
       </CardContent>
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-[95vw] sm:max-w-sm">
           <DialogHeader><DialogTitle>{editId ? 'Editar' : 'Nova'} Igreja</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <Input placeholder="Nome da igreja" value={name} onChange={e => setName(e.target.value)} />
@@ -333,7 +333,7 @@ const RolesTab = () => {
         </Table>
       </CardContent>
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-[95vw] sm:max-w-sm">
           <DialogHeader><DialogTitle>{editing ? 'Editar' : 'Novo'} Cargo</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <Input placeholder="Nome do cargo" value={name} onChange={e => setName(e.target.value)} />
