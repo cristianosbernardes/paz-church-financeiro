@@ -216,6 +216,21 @@ const Transacoes = () => {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1">
+              <label className="text-sm font-medium">Igreja</label>
+              <Select value={formChurchId} onValueChange={setFormChurchId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecionar igreja" />
+                </SelectTrigger>
+                <SelectContent>
+                  {memberships.map(m => (
+                    <SelectItem key={m.church_id} value={m.church_id}>
+                      {m.churches?.name ?? m.church_id}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
               <label className="text-sm font-medium">Data</label>
               <Input type="date" value={formDate} onChange={e => setFormDate(e.target.value)} />
             </div>
