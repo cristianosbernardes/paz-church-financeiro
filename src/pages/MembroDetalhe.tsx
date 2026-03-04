@@ -57,6 +57,16 @@ const MembroDetalhe = () => {
   const totalIncome = transactions.filter(t => t.type === 'INCOME').reduce((s, t) => s + t.amount_cents, 0);
   const totalExpense = transactions.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + t.amount_cents, 0);
 
+  const handleDownload = async (url: string, description: string) => {
+    try {
+      const fileName = url.split('/').pop() || description;
+      await downloadFileAsPng(url, fileName);
+      toast.success('Download iniciado');
+    } catch {
+      toast.error('Erro ao baixar arquivo');
+    }
+  };
+
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Header */}
