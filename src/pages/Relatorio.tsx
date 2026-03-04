@@ -78,7 +78,7 @@ const Relatorio = () => {
 
   const exportCSV = () => {
     let csv = `RELATÓRIO DETALHADO - ${monthLabel}\n`;
-    csv += `${selectedChurchName}\n\n`;
+    csv += `${localChurchName}\n\n`;
     csv += `Saldo Mês Anterior;${formatCentsToBRL(summary.previousBalance)}\n`;
     csv += `Entrada do Mês;${formatCentsToBRL(summary.totalIncome)}\n`;
     csv += `Total Saída;${formatCentsToBRL(summary.totalExpense)}\n`;
@@ -102,7 +102,7 @@ const Relatorio = () => {
     doc.setFontSize(16);
     doc.text(`RELATÓRIO DETALHADO - ${monthLabel}`, 14, 20);
     doc.setFontSize(11);
-    doc.text(selectedChurchName, 14, 28);
+    doc.text(localChurchName, 14, 28);
 
     doc.setFontSize(10);
     const summaryData = [
