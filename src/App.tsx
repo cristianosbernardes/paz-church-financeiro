@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import Relatorio from "./pages/Relatorio";
 import Transacoes from "./pages/Transacoes";
 import Config from "./pages/Config";
+import Membros from "./pages/Membros";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -48,6 +49,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <AppLayout><Transacoes /></AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/membros"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout><Membros /></AppLayout>
                   </ProtectedRoute>
                 }
               />
