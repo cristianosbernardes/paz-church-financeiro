@@ -88,14 +88,17 @@ const Transacoes = () => {
 
     let receipt_url = editing?.receipt_url ?? null;
 
-    // Upload receipt if provided
+    // Upload receipt if provided — route to correct bucket and convert images to WebP
     if (formFile && formChurchId) {
-      const ext = formFile.name.split('.').pop();
-      const path = `${formChurchId}/${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from('receipts').upload(path, formFile);
+      const processedFile = await processFileForUpload(formFile);
+      const bucket = getBucketForType(formType);
+      const path = buildStoragePath(formChurchId, formDate, processedFile.name);
+      const { error } = await supabase.storage.from(bucket).upload(path, processedFile);
       if (!error) {
-        const { data: urlData } = supabase.storage.from('receipts').getPublicUrl(path);
+        const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path);
         receipt_url = urlData.publicUrl;
+      } else {
+        toast.error('Erro ao enviar arquivo: ' + error.message);
       }
     }
 
