@@ -20,6 +20,7 @@ const Transacoes = () => {
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [membersList, setMembersList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
@@ -31,6 +32,7 @@ const Transacoes = () => {
   const [formDescription, setFormDescription] = useState('');
   const [formCategoryId, setFormCategoryId] = useState('');
   const [formChurchId, setFormChurchId] = useState('');
+  const [formMemberId, setFormMemberId] = useState('');
   const [formFile, setFormFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -41,12 +43,14 @@ const Transacoes = () => {
 
   const fetchAll = async () => {
     setLoading(true);
-    const [{ data: txns }, { data: cats }] = await Promise.all([
-      supabase.from('transactions').select('*, categories(*)').in('church_id', activeChurchIds).order('date', { ascending: false }).limit(200),
+    const [{ data: txns }, { data: cats }, { data: mbrs }] = await Promise.all([
+      supabase.from('transactions').select('*, categories(*), members(full_name)').in('church_id', activeChurchIds).order('date', { ascending: false }).limit(200),
       supabase.from('categories').select('*').in('church_id', activeChurchIds).order('name'),
+      supabase.from('members').select('id, full_name, church_id').in('church_id', activeChurchIds).order('full_name'),
     ]);
     setTransactions(txns || []);
     setCategories(cats || []);
+    setMembersList(mbrs || []);
     setLoading(false);
   };
 
@@ -58,7 +62,7 @@ const Transacoes = () => {
     setFormDescription('');
     setFormCategoryId('');
     setFormChurchId(selectedChurchId === ALL_CHURCHES ? '' : selectedChurchId || '');
-    setFormFile(null);
+    setFormMemberId('');
     setDialogOpen(true);
   };
 
@@ -70,7 +74,7 @@ const Transacoes = () => {
     setFormDescription(t.description);
     setFormCategoryId(t.category_id || '');
     setFormChurchId(t.church_id);
-    setFormFile(null);
+    setFormMemberId((t as any).member_id || '');
     setDialogOpen(true);
   };
 
@@ -102,6 +106,7 @@ const Transacoes = () => {
       amount_cents,
       description: formDescription,
       category_id: formCategoryId || null,
+      member_id: formMemberId || null,
       receipt_url,
       created_by: user!.id,
     };
@@ -163,14 +168,15 @@ const Transacoes = () => {
                   <TableHead>Tipo</TableHead>
                   <TableHead>Valor</TableHead>
                   <TableHead>Categoria</TableHead>
-                  <TableHead>Descrição</TableHead>
-                  <TableHead>Comprov.</TableHead>
+                   <TableHead>Descrição</TableHead>
+                   <TableHead>Membro</TableHead>
+                   <TableHead>Comprov.</TableHead>
                   {canEdit && <TableHead className="w-20">Ações</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {transactions.length === 0 ? (
-                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-12">Nenhuma transação encontrada</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-12">Nenhuma transação encontrada</TableCell></TableRow>
                 ) : transactions.map(t => (
                   <TableRow key={t.id}>
                     <TableCell className="font-mono text-sm">{new Date(t.date + 'T12:00:00').toLocaleDateString('pt-BR')}</TableCell>
@@ -185,7 +191,8 @@ const Transacoes = () => {
                       {formatCentsToBRL(t.amount_cents)}
                     </TableCell>
                     <TableCell className="text-sm">{t.categories?.name || '—'}</TableCell>
-                    <TableCell className="max-w-[200px] truncate">{t.description}</TableCell>
+                     <TableCell className="max-w-[200px] truncate">{t.description}</TableCell>
+                     <TableCell className="text-xs">{(t as any).members?.full_name || '—'}</TableCell>
                     <TableCell>
                       {t.receipt_url ? (
                         <a href={t.receipt_url} target="_blank" rel="noopener" className="text-primary text-xs underline">Ver</a>
@@ -262,6 +269,20 @@ const Transacoes = () => {
                 <SelectContent>
                   {filteredCategories.map(c => (
                     <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Membro (opcional)</label>
+              <Select value={formMemberId} onValueChange={setFormMemberId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Vincular a um membro" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Nenhum</SelectItem>
+                  {membersList.filter(m => !formChurchId || m.church_id === formChurchId).map(m => (
+                    <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useChurch } from '@/contexts/ChurchContext';
 import { supabase } from '@/lib/supabaseClient';
+import { formatCentsToBRL } from '@/lib/formatters';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -8,8 +9,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Eye, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
 import type { Church } from '@/types/database';
 
 const Membros = () => {
@@ -21,9 +23,21 @@ const Membros = () => {
   const [editing, setEditing] = useState<any | null>(null);
   const [name, setName] = useState('');
   const [churchId, setChurchId] = useState('');
-  const [role, setRole] = useState('Membro');
+  const [role, setRole] = useState('');
+  const [conversionDate, setConversionDate] = useState('');
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  // Relatives state
+  const [relatives, setRelatives] = useState<any[]>([]);
+  const [newRelativeMemberId, setNewRelativeMemberId] = useState('');
+  const [newRelativeName, setNewRelativeName] = useState('');
+  const [newRelationship, setNewRelationship] = useState('Parente');
+
+  // Detail view state
+  const [viewMember, setViewMember] = useState<any | null>(null);
+  const [viewTransactions, setViewTransactions] = useState<any[]>([]);
+  const [viewRelatives, setViewRelatives] = useState<any[]>([]);
 
   const userChurchIds = memberships.map(m => m.church_id);
   const canWrite = userRole === 'ADMIN' || userRole === 'TESOURARIA';
@@ -45,22 +59,36 @@ const Membros = () => {
     setEditing(null);
     setName('');
     setChurchId(userChurchIds[0] || '');
-    setRole('Membro');
+    setRole('');
+    setConversionDate('');
+    setRelatives([]);
     setDialogOpen(true);
   };
 
-  const openEdit = (m: any) => {
+  const openEdit = async (m: any) => {
     setEditing(m);
     setName(m.full_name);
     setChurchId(m.church_id);
-    setRole(m.role || 'Membro');
+    setRole(m.role || '');
+    setConversionDate(m.conversion_date || '');
+    // Load relatives
+    const { data } = await supabase
+      .from('member_relatives')
+      .select('*, relative:relative_member_id(full_name)')
+      .eq('member_id', m.id);
+    setRelatives(data || []);
     setDialogOpen(true);
   };
 
   const save = async () => {
     if (!name.trim() || !churchId) return;
     setSaving(true);
-    const payload = { full_name: name.trim(), church_id: churchId, role };
+    const payload = {
+      full_name: name.trim(),
+      church_id: churchId,
+      role: role || null,
+      conversion_date: conversionDate || null,
+    };
     if (editing) {
       const { error } = await supabase.from('members').update(payload).eq('id', editing.id);
       if (error) { toast.error('Erro ao atualizar: ' + error.message); }
@@ -73,6 +101,50 @@ const Membros = () => {
     setSaving(false);
     setDialogOpen(false);
     fetchData();
+  };
+
+  const addRelative = async () => {
+    if (!editing) return;
+    if (!newRelativeMemberId && !newRelativeName.trim()) {
+      toast.error('Selecione um membro ou digite um nome');
+      return;
+    }
+    const payload: any = {
+      member_id: editing.id,
+      relationship: newRelationship,
+    };
+    if (newRelativeMemberId) {
+      payload.relative_member_id = newRelativeMemberId;
+    } else {
+      payload.relative_name = newRelativeName.trim();
+    }
+    const { error } = await supabase.from('member_relatives').insert(payload);
+    if (error) { toast.error('Erro: ' + error.message); return; }
+    toast.success('Parente adicionado');
+    setNewRelativeMemberId('');
+    setNewRelativeName('');
+    setNewRelationship('Parente');
+    // Reload relatives
+    const { data } = await supabase
+      .from('member_relatives')
+      .select('*, relative:relative_member_id(full_name)')
+      .eq('member_id', editing.id);
+    setRelatives(data || []);
+  };
+
+  const removeRelative = async (id: string) => {
+    await supabase.from('member_relatives').delete().eq('id', id);
+    setRelatives(prev => prev.filter(r => r.id !== id));
+  };
+
+  const openView = async (m: any) => {
+    setViewMember(m);
+    const [txRes, relRes] = await Promise.all([
+      supabase.from('transactions').select('*, categories(name)').eq('member_id', m.id).order('date', { ascending: false }),
+      supabase.from('member_relatives').select('*, relative:relative_member_id(full_name)').eq('member_id', m.id),
+    ]);
+    setViewTransactions(txRes.data || []);
+    setViewRelatives(relRes.data || []);
   };
 
   const confirmDel = async () => {
@@ -101,8 +173,9 @@ const Membros = () => {
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead>Igreja</TableHead>
-                <TableHead>Papel</TableHead>
-                {canWrite && <TableHead className="w-20">Ações</TableHead>}
+                <TableHead>Cargo</TableHead>
+                <TableHead>Conversão</TableHead>
+                <TableHead className="w-28">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -110,19 +183,29 @@ const Membros = () => {
                 <TableRow key={m.id}>
                   <TableCell>{m.full_name}</TableCell>
                   <TableCell className="text-xs">{m.churches?.name}</TableCell>
-                  <TableCell className="text-xs">{m.role || 'Membro'}</TableCell>
-                  {canWrite && (
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(m)}>
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(m.id)}>
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  )}
+                  <TableCell className="text-xs">{m.role || '—'}</TableCell>
+                  <TableCell className="text-xs">
+                    {m.conversion_date
+                      ? new Date(m.conversion_date + 'T12:00:00').toLocaleDateString('pt-BR')
+                      : '—'}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openView(m)} title="Ver detalhes">
+                        <Eye className="h-3.5 w-3.5" />
+                      </Button>
+                      {canWrite && (
+                        <>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(m)}>
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(m.id)}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -130,30 +213,90 @@ const Membros = () => {
         </CardContent>
       </Card>
 
+      {/* Edit/Create Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{editing ? 'Editar' : 'Novo'} Membro</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <Input placeholder="Nome completo" value={name} onChange={e => setName(e.target.value)} />
-            <Select value={churchId} onValueChange={setChurchId}>
-              <SelectTrigger><SelectValue placeholder="Selecione a igreja" /></SelectTrigger>
-              <SelectContent>
-                {churches.map(c => (
-                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Nome completo</label>
+              <Input placeholder="Nome completo" value={name} onChange={e => setName(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Igreja</label>
+              <Select value={churchId} onValueChange={setChurchId}>
+                <SelectTrigger><SelectValue placeholder="Selecione a igreja" /></SelectTrigger>
+                <SelectContent>
+                  {churches.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Cargo</label>
+              <Select value={role} onValueChange={setRole}>
+                <SelectTrigger><SelectValue placeholder="Selecione o cargo" /></SelectTrigger>
+                <SelectContent>
+                  {roles.map(r => (
+                    <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>
+                  ))}
+                  {roles.length === 0 && (
+                    <SelectItem value="_" disabled>Cadastre cargos em Configurações</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Data de Conversão</label>
+              <Input type="date" value={conversionDate} onChange={e => setConversionDate(e.target.value)} />
+            </div>
+
+            {/* Relatives section - only when editing */}
+            {editing && (
+              <div className="space-y-2 border-t pt-3">
+                <label className="text-sm font-medium">Parentes</label>
+                {relatives.map(r => (
+                  <div key={r.id} className="flex items-center justify-between bg-muted rounded-md px-3 py-1.5 text-sm">
+                    <span>
+                      {r.relative?.full_name || r.relative_name || '—'}
+                      <span className="text-muted-foreground ml-1">({r.relationship})</span>
+                    </span>
+                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeRelative(r.id)}>
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
                 ))}
-              </SelectContent>
-            </Select>
-            <Select value={role} onValueChange={setRole}>
-              <SelectTrigger><SelectValue placeholder="Selecione o cargo" /></SelectTrigger>
-              <SelectContent>
-                {roles.map(r => (
-                  <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>
-                ))}
-                {roles.length === 0 && (
-                  <SelectItem value="Membro" disabled>Cadastre cargos em Configurações</SelectItem>
-                )}
-              </SelectContent>
-            </Select>
+                <div className="grid grid-cols-2 gap-2">
+                  <Select value={newRelativeMemberId} onValueChange={v => { setNewRelativeMemberId(v); setNewRelativeName(''); }}>
+                    <SelectTrigger className="text-xs h-8"><SelectValue placeholder="Vincular membro" /></SelectTrigger>
+                    <SelectContent>
+                      {members.filter(m2 => m2.id !== editing.id).map(m2 => (
+                        <SelectItem key={m2.id} value={m2.id}>{m2.full_name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    placeholder="Ou digite um nome"
+                    className="text-xs h-8"
+                    value={newRelativeName}
+                    onChange={e => { setNewRelativeName(e.target.value); setNewRelativeMemberId(''); }}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Parentesco (ex: Esposo, Filho)"
+                    className="text-xs h-8"
+                    value={newRelationship}
+                    onChange={e => setNewRelationship(e.target.value)}
+                  />
+                  <Button size="sm" variant="outline" className="h-8 text-xs" onClick={addRelative}>
+                    <Plus className="h-3 w-3 mr-1" /> Adicionar
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <Button className="w-full" onClick={save} disabled={saving}>
               {saving ? 'Salvando...' : 'Salvar'}
             </Button>
@@ -161,6 +304,87 @@ const Membros = () => {
         </DialogContent>
       </Dialog>
 
+      {/* View Detail Dialog */}
+      <Dialog open={!!viewMember} onOpenChange={(open) => !open && setViewMember(null)}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{viewMember?.full_name}</DialogTitle>
+          </DialogHeader>
+          {viewMember && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Igreja:</span>
+                  <p className="font-medium">{viewMember.churches?.name}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Cargo:</span>
+                  <p className="font-medium">{viewMember.role || '—'}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Conversão:</span>
+                  <p className="font-medium">
+                    {viewMember.conversion_date
+                      ? new Date(viewMember.conversion_date + 'T12:00:00').toLocaleDateString('pt-BR')
+                      : 'Não informada'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Relatives */}
+              {viewRelatives.length > 0 && (
+                <div className="space-y-1">
+                  <h3 className="text-sm font-semibold">Parentes</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {viewRelatives.map(r => (
+                      <Badge key={r.id} variant="secondary">
+                        {r.relative?.full_name || r.relative_name} ({r.relationship})
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Transaction History */}
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold">Histórico de Transações</h3>
+                {viewTransactions.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nenhuma transação vinculada a este membro.</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Data</TableHead>
+                        <TableHead>Tipo</TableHead>
+                        <TableHead>Valor</TableHead>
+                        <TableHead>Descrição</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {viewTransactions.map(t => (
+                        <TableRow key={t.id}>
+                          <TableCell className="text-xs font-mono">{new Date(t.date + 'T12:00:00').toLocaleDateString('pt-BR')}</TableCell>
+                          <TableCell>
+                            <Badge variant={t.type === 'INCOME' ? 'default' : 'destructive'} className="text-xs">
+                              {t.type === 'INCOME' ? 'Entrada' : 'Saída'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className={`text-xs font-semibold ${t.type === 'INCOME' ? 'text-income' : 'text-expense'}`}>
+                            {formatCentsToBRL(t.amount_cents)}
+                          </TableCell>
+                          <TableCell className="text-xs max-w-[150px] truncate">{t.description}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
