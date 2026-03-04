@@ -13,6 +13,7 @@ import Relatorio from "./pages/Relatorio";
 import Transacoes from "./pages/Transacoes";
 import Config from "./pages/Config";
 import Membros from "./pages/Membros";
+import MembroDetalhe from "./pages/MembroDetalhe";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -57,6 +58,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <AppLayout><Membros /></AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/membros/:id"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout><MembroDetalhe /></AppLayout>
                   </ProtectedRoute>
                 }
               />

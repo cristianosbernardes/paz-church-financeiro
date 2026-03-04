@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useChurch } from '@/contexts/ChurchContext';
 import { supabase } from '@/lib/supabaseClient';
-import { formatCentsToBRL } from '@/lib/formatters';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -11,10 +11,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Plus, Pencil, Trash2, Eye, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { Badge } from '@/components/ui/badge';
 import type { Church } from '@/types/database';
 
 const Membros = () => {
+  const navigate = useNavigate();
   const { memberships, userRole } = useChurch();
   const [members, setMembers] = useState<any[]>([]);
   const [churches, setChurches] = useState<Church[]>([]);
@@ -33,11 +33,6 @@ const Membros = () => {
   const [newRelativeMemberId, setNewRelativeMemberId] = useState('');
   const [newRelativeName, setNewRelativeName] = useState('');
   const [newRelationship, setNewRelationship] = useState('Parente');
-
-  // Detail view state
-  const [viewMember, setViewMember] = useState<any | null>(null);
-  const [viewTransactions, setViewTransactions] = useState<any[]>([]);
-  const [viewRelatives, setViewRelatives] = useState<any[]>([]);
 
   const userChurchIds = memberships.map(m => m.church_id);
   const canWrite = userRole === 'ADMIN' || userRole === 'TESOURARIA';
@@ -71,7 +66,6 @@ const Membros = () => {
     setChurchId(m.church_id);
     setRole(m.role || '');
     setConversionDate(m.conversion_date || '');
-    // Load relatives
     const { data } = await supabase
       .from('member_relatives')
       .select('*, relative:relative_member_id(full_name)')
@@ -124,7 +118,6 @@ const Membros = () => {
     setNewRelativeMemberId('');
     setNewRelativeName('');
     setNewRelationship('Parente');
-    // Reload relatives
     const { data } = await supabase
       .from('member_relatives')
       .select('*, relative:relative_member_id(full_name)')
@@ -135,16 +128,6 @@ const Membros = () => {
   const removeRelative = async (id: string) => {
     await supabase.from('member_relatives').delete().eq('id', id);
     setRelatives(prev => prev.filter(r => r.id !== id));
-  };
-
-  const openView = async (m: any) => {
-    setViewMember(m);
-    const [txRes, relRes] = await Promise.all([
-      supabase.from('transactions').select('*, categories(name)').eq('member_id', m.id).order('date', { ascending: false }),
-      supabase.from('member_relatives').select('*, relative:relative_member_id(full_name)').eq('member_id', m.id),
-    ]);
-    setViewTransactions(txRes.data || []);
-    setViewRelatives(relRes.data || []);
   };
 
   const confirmDel = async () => {
@@ -191,7 +174,7 @@ const Membros = () => {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openView(m)} title="Ver detalhes">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigate(`/membros/${m.id}`)} title="Ver detalhes">
                         <Eye className="h-3.5 w-3.5" />
                       </Button>
                       {canWrite && (
@@ -301,86 +284,6 @@ const Membros = () => {
               {saving ? 'Salvando...' : 'Salvar'}
             </Button>
           </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* View Detail Dialog */}
-      <Dialog open={!!viewMember} onOpenChange={(open) => !open && setViewMember(null)}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{viewMember?.full_name}</DialogTitle>
-          </DialogHeader>
-          {viewMember && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Igreja:</span>
-                  <p className="font-medium">{viewMember.churches?.name}</p>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Cargo:</span>
-                  <p className="font-medium">{viewMember.role || '—'}</p>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Conversão:</span>
-                  <p className="font-medium">
-                    {viewMember.conversion_date
-                      ? new Date(viewMember.conversion_date + 'T12:00:00').toLocaleDateString('pt-BR')
-                      : 'Não informada'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Relatives */}
-              {viewRelatives.length > 0 && (
-                <div className="space-y-1">
-                  <h3 className="text-sm font-semibold">Parentes</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {viewRelatives.map(r => (
-                      <Badge key={r.id} variant="secondary">
-                        {r.relative?.full_name || r.relative_name} ({r.relationship})
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Transaction History */}
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold">Histórico de Transações</h3>
-                {viewTransactions.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Nenhuma transação vinculada a este membro.</p>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Data</TableHead>
-                        <TableHead>Tipo</TableHead>
-                        <TableHead>Valor</TableHead>
-                        <TableHead>Descrição</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {viewTransactions.map(t => (
-                        <TableRow key={t.id}>
-                          <TableCell className="text-xs font-mono">{new Date(t.date + 'T12:00:00').toLocaleDateString('pt-BR')}</TableCell>
-                          <TableCell>
-                            <Badge variant={t.type === 'INCOME' ? 'default' : 'destructive'} className="text-xs">
-                              {t.type === 'INCOME' ? 'Entrada' : 'Saída'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className={`text-xs font-semibold ${t.type === 'INCOME' ? 'text-income' : 'text-expense'}`}>
-                            {formatCentsToBRL(t.amount_cents)}
-                          </TableCell>
-                          <TableCell className="text-xs max-w-[150px] truncate">{t.description}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </div>
-            </div>
-          )}
         </DialogContent>
       </Dialog>
 
