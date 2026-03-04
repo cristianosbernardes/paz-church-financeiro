@@ -3,11 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useChurch } from '@/contexts/ChurchContext';
 import { supabase } from '@/lib/supabaseClient';
 import { formatCentsToBRL } from '@/lib/formatters';
+import { downloadFileAsPng } from '@/lib/fileUtils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Calendar, Church, UserCheck, Users, Pencil } from 'lucide-react';
+import { ArrowLeft, Calendar, Church, UserCheck, Users, Pencil, Download, FileText } from 'lucide-react';
+import { toast } from 'sonner';
 
 const MembroDetalhe = () => {
   const { id } = useParams<{ id: string }>();
