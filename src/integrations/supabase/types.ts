@@ -64,6 +64,35 @@ export type Database = {
         }
         Relationships: []
       }
+      member_roles: {
+        Row: {
+          church_id: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          church_id: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          church_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_roles_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       members: {
         Row: {
           church_id: string

@@ -16,6 +16,7 @@ const Membros = () => {
   const { memberships, userRole } = useChurch();
   const [members, setMembers] = useState<any[]>([]);
   const [churches, setChurches] = useState<Church[]>([]);
+  const [roles, setRoles] = useState<any[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
   const [name, setName] = useState('');
@@ -28,12 +29,14 @@ const Membros = () => {
   const canWrite = userRole === 'ADMIN' || userRole === 'TESOURARIA';
 
   const fetchData = async () => {
-    const [membersRes, churchesRes] = await Promise.all([
+    const [membersRes, churchesRes, rolesRes] = await Promise.all([
       supabase.from('members').select('*, churches(name)').in('church_id', userChurchIds).order('full_name'),
       supabase.from('churches').select('*').in('id', userChurchIds).order('name'),
+      supabase.from('member_roles').select('*').in('church_id', userChurchIds).order('name'),
     ]);
     setMembers(membersRes.data || []);
     setChurches(churchesRes.data || []);
+    setRoles(rolesRes.data || []);
   };
 
   useEffect(() => { if (userChurchIds.length) fetchData(); }, [memberships]);
@@ -141,13 +144,14 @@ const Membros = () => {
               </SelectContent>
             </Select>
             <Select value={role} onValueChange={setRole}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Selecione o cargo" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="Membro">Membro</SelectItem>
-                <SelectItem value="Líder">Líder</SelectItem>
-                <SelectItem value="Pastor">Pastor</SelectItem>
-                <SelectItem value="Diácono">Diácono</SelectItem>
-                <SelectItem value="Tesoureiro">Tesoureiro</SelectItem>
+                {roles.map(r => (
+                  <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>
+                ))}
+                {roles.length === 0 && (
+                  <SelectItem value="Membro" disabled>Cadastre cargos em Configurações</SelectItem>
+                )}
               </SelectContent>
             </Select>
             <Button className="w-full" onClick={save} disabled={saving}>
