@@ -14,6 +14,7 @@ import Transacoes from "./pages/Transacoes";
 import Config from "./pages/Config";
 import Membros from "./pages/Membros";
 import MembroDetalhe from "./pages/MembroDetalhe";
+import Fechamento from "./pages/Fechamento";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -66,6 +67,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <AppLayout><MembroDetalhe /></AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/fechamento"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout><Fechamento /></AppLayout>
                   </ProtectedRoute>
                 }
               />

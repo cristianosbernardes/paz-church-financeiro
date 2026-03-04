@@ -5,13 +5,14 @@ import { useChurch, ALL_CHURCHES } from '@/contexts/ChurchContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { LayoutDashboard, FileText, List, Settings, LogOut, Church, Users, Menu } from 'lucide-react';
+import { LayoutDashboard, FileText, List, Settings, LogOut, Church, Users, Menu, Lock } from 'lucide-react';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/relatorio', label: 'Relatório', icon: FileText },
   { to: '/transacoes', label: 'Transações', icon: List },
   { to: '/membros', label: 'Membros', icon: Users },
+  { to: '/fechamento', label: 'Fechamento', icon: Lock },
   { to: '/config', label: 'Configurações', icon: Settings },
 ];
 
