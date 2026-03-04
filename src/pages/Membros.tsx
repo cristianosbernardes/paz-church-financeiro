@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useChurch } from '@/contexts/ChurchContext';
 import { supabase } from '@/lib/supabaseClient';
 import { Button } from '@/components/ui/button';
