@@ -157,6 +157,7 @@ const ChurchesTab = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [name, setName] = useState('');
   const [editId, setEditId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const fetch = async () => {
     const { data } = await supabase.from('churches').select('*').order('name');
@@ -175,6 +176,18 @@ const ChurchesTab = () => {
       toast.success('Igreja criada');
     }
     setDialogOpen(false);
+    fetch();
+  };
+
+  const confirmDel = async () => {
+    if (!deleteId) return;
+    const { error } = await supabase.from('churches').delete().eq('id', deleteId);
+    if (error) {
+      toast.error('Erro ao excluir: ' + error.message);
+    } else {
+      toast.success('Igreja excluída');
+    }
+    setDeleteId(null);
     fetch();
   };
 
@@ -199,9 +212,14 @@ const ChurchesTab = () => {
               <TableRow key={c.id}>
                 <TableCell>{c.name}</TableCell>
                 <TableCell>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditId(c.id); setName(c.name); setDialogOpen(true); }}>
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditId(c.id); setName(c.name); setDialogOpen(true); }}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(c.id)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -217,6 +235,18 @@ const ChurchesTab = () => {
           </div>
         </DialogContent>
       </Dialog>
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir igreja</AlertDialogTitle>
+            <AlertDialogDescription>Tem certeza que deseja excluir esta igreja? Todos os dados associados (membros, transações, categorias) poderão ser afetados. Esta ação não pode ser desfeita.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDel} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };
