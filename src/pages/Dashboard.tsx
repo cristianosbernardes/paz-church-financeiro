@@ -12,7 +12,7 @@ import type { Transaction, MonthlySummary } from '@/types/database';
 const COLORS = ['hsl(220, 70%, 45%)', 'hsl(160, 60%, 40%)', 'hsl(40, 90%, 50%)', 'hsl(0, 72%, 51%)', 'hsl(280, 60%, 50%)', 'hsl(30, 80%, 50%)'];
 
 const Dashboard = () => {
-  const { selectedChurchId } = useChurch();
+  const { selectedChurchId, activeChurchIds } = useChurch();
   const [searchParams, setSearchParams] = useSearchParams();
   const month = searchParams.get('month') || getCurrentYearMonth();
   const [year, monthNum] = month.split('-').map(Number);
@@ -23,7 +23,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!selectedChurchId) return;
+    if (activeChurchIds.length === 0) return;
     fetchData();
   }, [selectedChurchId, month]);
 
@@ -35,7 +35,7 @@ const Dashboard = () => {
     const { data: txns } = await supabase
       .from('transactions')
       .select('*, categories(*)')
-      .eq('church_id', selectedChurchId)
+      .in('church_id', activeChurchIds)
       .gte('date', startDate)
       .lte('date', endDate)
       .order('date');
@@ -49,7 +49,7 @@ const Dashboard = () => {
     const { data: prevTxns } = await supabase
       .from('transactions')
       .select('type, amount_cents')
-      .eq('church_id', selectedChurchId)
+      .in('church_id', activeChurchIds)
       .lt('date', startDate);
 
     const previousBalance = (prevTxns || []).reduce((s, t) => {
@@ -75,7 +75,7 @@ const Dashboard = () => {
       const { data: tTxns } = await supabase
         .from('transactions')
         .select('type, amount_cents')
-        .eq('church_id', selectedChurchId)
+        .in('church_id', activeChurchIds)
         .gte('date', tStart)
         .lte('date', tEnd);
 
